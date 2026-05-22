@@ -9,38 +9,122 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VoiceRouteImport } from './routes/voice'
+import { Route as PonudeRouteImport } from './routes/ponude'
+import { Route as HomeRouteImport } from './routes/home'
+import { Route as ChatRouteImport } from './routes/chat'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PonudeIdRouteImport } from './routes/ponude.$id'
 
+const VoiceRoute = VoiceRouteImport.update({
+  id: '/voice',
+  path: '/voice',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PonudeRoute = PonudeRouteImport.update({
+  id: '/ponude',
+  path: '/ponude',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PonudeIdRoute = PonudeIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PonudeRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
+  '/home': typeof HomeRoute
+  '/ponude': typeof PonudeRouteWithChildren
+  '/voice': typeof VoiceRoute
+  '/ponude/$id': typeof PonudeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
+  '/home': typeof HomeRoute
+  '/ponude': typeof PonudeRouteWithChildren
+  '/voice': typeof VoiceRoute
+  '/ponude/$id': typeof PonudeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
+  '/home': typeof HomeRoute
+  '/ponude': typeof PonudeRouteWithChildren
+  '/voice': typeof VoiceRoute
+  '/ponude/$id': typeof PonudeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/chat' | '/home' | '/ponude' | '/voice' | '/ponude/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/chat' | '/home' | '/ponude' | '/voice' | '/ponude/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/chat'
+    | '/home'
+    | '/ponude'
+    | '/voice'
+    | '/ponude/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChatRoute: typeof ChatRoute
+  HomeRoute: typeof HomeRoute
+  PonudeRoute: typeof PonudeRouteWithChildren
+  VoiceRoute: typeof VoiceRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/voice': {
+      id: '/voice'
+      path: '/voice'
+      fullPath: '/voice'
+      preLoaderRoute: typeof VoiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ponude': {
+      id: '/ponude'
+      path: '/ponude'
+      fullPath: '/ponude'
+      preLoaderRoute: typeof PonudeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,12 +132,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ponude/$id': {
+      id: '/ponude/$id'
+      path: '/$id'
+      fullPath: '/ponude/$id'
+      preLoaderRoute: typeof PonudeIdRouteImport
+      parentRoute: typeof PonudeRoute
+    }
   }
 }
 
+interface PonudeRouteChildren {
+  PonudeIdRoute: typeof PonudeIdRoute
+}
+
+const PonudeRouteChildren: PonudeRouteChildren = {
+  PonudeIdRoute: PonudeIdRoute,
+}
+
+const PonudeRouteWithChildren =
+  PonudeRoute._addFileChildren(PonudeRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChatRoute: ChatRoute,
+  HomeRoute: HomeRoute,
+  PonudeRoute: PonudeRouteWithChildren,
+  VoiceRoute: VoiceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
