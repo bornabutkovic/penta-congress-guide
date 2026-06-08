@@ -1,10 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, Mic, MessageSquare, FileText } from "lucide-react";
+import { Home, Mic, MessageSquare, FileText, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/home", label: "Početna", icon: Home },
   { to: "/voice", label: "Glas", icon: Mic },
+  { to: "/nova-ponuda", label: "Nova", icon: PlusCircle },
   { to: "/chat", label: "Chat", icon: MessageSquare },
   { to: "/ponude", label: "Ponude", icon: FileText },
 ] as const;
