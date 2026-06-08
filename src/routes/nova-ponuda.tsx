@@ -318,6 +318,32 @@ function NovaPonudaPage() {
               ))}
             </div>
 
+            <AnimatePresence initial={false}>
+              {form.transfer_needed && (
+                <motion.div
+                  key="transfer_address"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-3">
+                    <FieldLabel htmlFor="transfer_address">Adresa polaska</FieldLabel>
+                    <input
+                      id="transfer_address"
+                      type="text"
+                      placeholder="npr. Ilica 42, Zagreb"
+                      className={inputClass}
+                      value={form.transfer_address}
+                      onChange={(e) => update("transfer_address", e.target.value)}
+                    />
+                    <ErrorText msg={errors.transfer_address} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <button
               type="submit"
               disabled={submitting}
