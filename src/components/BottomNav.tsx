@@ -1,10 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, Mic, MessageSquare, FileText } from "lucide-react";
+import { Home, Mic, MessageSquare, FileText, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/home", label: "Početna", icon: Home },
   { to: "/voice", label: "Glas", icon: Mic },
+  { to: "/nova-ponuda", label: "Nova", icon: PlusCircle },
   { to: "/chat", label: "Chat", icon: MessageSquare },
   { to: "/ponude", label: "Ponude", icon: FileText },
 ] as const;
@@ -14,7 +15,7 @@ export function BottomNav() {
 
   return (
     <nav className="sticky bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-5">
         {items.map(({ to, label, icon: Icon }) => {
           const active = pathname === to || (to !== "/home" && pathname.startsWith(to));
           return (
