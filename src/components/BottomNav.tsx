@@ -15,7 +15,7 @@ export function BottomNav() {
 
   return (
     <nav className="sticky bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-5">
         {items.map(({ to, label, icon: Icon }) => {
           const active = pathname === to || (to !== "/home" && pathname.startsWith(to));
           return (
