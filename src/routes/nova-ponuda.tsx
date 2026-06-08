@@ -103,6 +103,8 @@ function NovaPonudaPage() {
     if (!form.checkout) e.checkout = "Obavezno polje";
     if (form.checkin && form.checkout && form.checkout <= form.checkin) {
       e.checkout = "Datum odlaska mora biti nakon dolaska";
+    if (form.transfer_needed && !form.transfer_address.trim()) {
+      e.transfer_address = "Obavezno polje";
     }
     setErrors(e);
     return Object.keys(e).length === 0;
