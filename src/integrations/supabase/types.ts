@@ -260,6 +260,45 @@ export type Database = {
           },
         ]
       }
+      "hotels 4*": {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          enriched: boolean | null
+          hid: string
+          latitude: number | null
+          longitude: number | null
+          name: string | null
+          stars: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          enriched?: boolean | null
+          hid: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string | null
+          stars?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          enriched?: boolean | null
+          hid?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string | null
+          stars?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       n8n_chat_histories: {
         Row: {
           id: number
@@ -318,10 +357,10 @@ export type Database = {
           approval_token: string
           approved_at: string | null
           client_email: string | null
-          client_id: string
+          client_id: string | null
           client_name: string | null
           client_phone: string | null
-          congress_id: string
+          congress_id: string | null
           created_at: string | null
           currency: string | null
           fee_data: Json | null
@@ -342,10 +381,10 @@ export type Database = {
           approval_token?: string
           approved_at?: string | null
           client_email?: string | null
-          client_id: string
+          client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
-          congress_id: string
+          congress_id?: string | null
           created_at?: string | null
           currency?: string | null
           fee_data?: Json | null
@@ -366,10 +405,10 @@ export type Database = {
           approval_token?: string
           approved_at?: string | null
           client_email?: string | null
-          client_id?: string
+          client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
-          congress_id?: string
+          congress_id?: string | null
           created_at?: string | null
           currency?: string | null
           fee_data?: Json | null
