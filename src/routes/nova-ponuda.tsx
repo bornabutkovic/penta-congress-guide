@@ -34,6 +34,7 @@ interface FormState {
   flight_needed: boolean;
   hotel_needed: boolean;
   transfer_needed: boolean;
+  transfer_address: string;
 }
 
 const initialState: FormState = {
