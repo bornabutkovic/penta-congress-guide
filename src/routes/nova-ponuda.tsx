@@ -50,6 +50,7 @@ const initialState: FormState = {
   flight_needed: true,
   hotel_needed: true,
   transfer_needed: true,
+  transfer_address: "",
 };
 
 type Errors = Partial<Record<keyof FormState, string>>;
