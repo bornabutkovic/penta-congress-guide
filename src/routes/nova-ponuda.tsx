@@ -134,6 +134,7 @@ function NovaPonudaPage() {
           flight_needed: form.flight_needed,
           hotel_needed: form.hotel_needed,
           transfer_needed: form.transfer_needed,
+          transfer_address: form.transfer_needed ? form.transfer_address.trim() : null,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
