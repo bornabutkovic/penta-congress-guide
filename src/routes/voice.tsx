@@ -180,7 +180,7 @@ function VoicePage() {
               <button
                 onClick={onPhoneButton}
                 className="flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--brand-red)] text-white shadow-elevated transition active:scale-95"
-                aria-label={state === "idle" ? "Pokreni poziv" : "Prekini"}
+                aria-label="Prekini"
               >
                 <PhoneOff className="h-6 w-6" />
               </button>
