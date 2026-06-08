@@ -19,8 +19,6 @@ export const Route = createFileRoute("/voice")({
 
 type OrbState = "idle" | "listening" | "speaking";
 
-const AGENT_ID = "agent_7108f761dd1304a9998d2003ab";
-const RETELL_API_KEY = "key_f78549c8884e3d2a3bb39dd00ba5";
 
 const mockUser = {
   name: "Test User",
@@ -71,21 +69,18 @@ function VoicePage() {
   const startCall = async () => {
     try {
       setTranscript("Povezivanje...");
-      const res = await fetch("https://api.retellai.com/v2/create-web-call", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${RETELL_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          agent_id: AGENT_ID,
-          retell_llm_dynamic_variables: {
+      const res = await fetch(
+        "https://knxemkxvsclsdagaenlg.supabase.co/functions/v1/retell-token",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
             client_name: mockUser.name,
             client_email: mockUser.email,
             client_phone: mockUser.phone,
-          },
-        }),
-      });
+          }),
+        }
+      );
       if (!res.ok) throw new Error(`Token request failed: ${res.status}`);
       const data = await res.json();
       const accessToken = data.access_token;
