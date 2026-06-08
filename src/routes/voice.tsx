@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, PhoneOff, Keyboard } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { RetellWebClient } from "retell-client-js-sdk";
 import { MobileFrame } from "@/components/MobileFrame";
 import { BottomNav } from "@/components/BottomNav";
 import { PageHeader } from "@/components/PageHeader";
@@ -18,23 +19,97 @@ export const Route = createFileRoute("/voice")({
 
 type OrbState = "idle" | "listening" | "speaking";
 
-const transcripts = [
-  "Slušam vas...",
-  "Tražim let Zagreb – Amsterdam za ESC Congress.",
-  "Provjeravam dostupnost hotela uz kongresni centar.",
-  "Pronašao sam tri opcije s odličnim ocjenama.",
-];
+const AGENT_ID = "YOUR_AGENT_ID";
+const TOKEN_URL = "https://penta.app.n8n.cloud/webhook/retell-token";
+const mockUser = { name: "Test User", email: "test@penta.hr", phone: "+38500000000" };
 
 function VoicePage() {
-  const [state, setState] = useState<OrbState>("listening");
+  const [state, setState] = useState<OrbState>("idle");
   const [muted, setMuted] = useState(false);
-  const [tIndex, setTIndex] = useState(0);
+  const [transcript, setTranscript] = useState("Dodirnite mikrofon za početak razgovora.");
+  const clientRef = useRef<RetellWebClient | null>(null);
 
   useEffect(() => {
-    if (state !== "listening" && state !== "speaking") return;
-    const id = setInterval(() => setTIndex((i) => (i + 1) % transcripts.length), 2800);
-    return () => clearInterval(id);
-  }, [state]);
+    const client = new RetellWebClient();
+    clientRef.current = client;
+
+    client.on("call_started", () => setState("listening"));
+    client.on("agent_start_talking", () => setState("speaking"));
+    client.on("agent_stop_talking", () => setState("listening"));
+    client.on("call_ended", () => setState("idle"));
+    client.on("error", (err: unknown) => {
+      console.error("Retell error", err);
+      setState("idle");
+    });
+    client.on("update", (update: { transcript?: Array<{ role: string; content: string }> | string }) => {
+      if (!update?.transcript) return;
+      if (typeof update.transcript === "string") {
+        setTranscript(update.transcript);
+      } else if (Array.isArray(update.transcript) && update.transcript.length > 0) {
+        const last = update.transcript[update.transcript.length - 1];
+        setTranscript(last.content);
+      }
+    });
+
+    return () => {
+      try {
+        client.stopCall();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
+
+  const startCall = async () => {
+    try {
+      setState("listening");
+      setTranscript("Povezivanje...");
+      const res = await fetch(TOKEN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agent_id: AGENT_ID,
+          client_name: mockUser.name,
+          client_email: mockUser.email,
+          client_phone: mockUser.phone,
+        }),
+      });
+      if (!res.ok) throw new Error(`Token request failed: ${res.status}`);
+      const data = await res.json();
+      const accessToken = data.access_token ?? data.accessToken ?? data.token;
+      if (!accessToken) throw new Error("No access token in response");
+
+      await clientRef.current?.startCall({
+        accessToken,
+        sampleRate: 24000,
+      });
+    } catch (err) {
+      console.error(err);
+      setTranscript("Greška pri pokretanju poziva.");
+      setState("idle");
+    }
+  };
+
+  const endCall = () => {
+    clientRef.current?.stopCall();
+    setState("idle");
+  };
+
+  const toggleMute = () => {
+    const client = clientRef.current;
+    if (!client) return;
+    if (muted) {
+      try { client.unmute?.(); } catch { /* noop */ }
+    } else {
+      try { client.mute?.(); } catch { /* noop */ }
+    }
+    setMuted((m) => !m);
+  };
+
+  const onMicPress = () => {
+    if (state === "idle") startCall();
+    else toggleMute();
+  };
 
   return (
     <MobileFrame>
@@ -72,28 +147,28 @@ function VoicePage() {
           <div className="min-h-[64px] rounded-2xl bg-white px-5 py-4 text-center text-sm text-muted-foreground shadow-card">
             <AnimatePresence mode="wait">
               <motion.p
-                key={tIndex}
+                key={transcript}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.3 }}
               >
-                {transcripts[tIndex]}
+                {transcript}
               </motion.p>
             </AnimatePresence>
           </div>
 
           <div className="mt-6 flex items-center justify-center gap-5">
             <button
-              onClick={() => setMuted((m) => !m)}
+              onClick={onMicPress}
               className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-card transition active:scale-95"
-              aria-label="Utišaj"
+              aria-label={state === "idle" ? "Pokreni poziv" : "Utišaj"}
             >
               {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
             </button>
 
             <button
-              onClick={() => setState(state === "idle" ? "listening" : "idle")}
+              onClick={endCall}
               className="flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--brand-red)] text-white shadow-elevated transition active:scale-95"
               aria-label="Prekini"
             >
