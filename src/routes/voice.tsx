@@ -130,7 +130,10 @@ function VoicePage() {
         </div>
 
         {/* Orb */}
-        <div className="relative flex h-72 w-72 items-center justify-center">
+        <div
+          className="relative flex h-72 w-72 cursor-pointer items-center justify-center"
+          onClick={onPhoneButton}
+        >
           {(state === "listening" || state === "speaking") && (
             <>
               <span className="absolute inset-0 rounded-full bg-gradient-brand opacity-20 blur-2xl" style={{ animation: "orb-pulse 2.4s ease-in-out infinite" }} />
@@ -139,7 +142,7 @@ function VoicePage() {
             </>
           )}
           <motion.div
-            className="relative h-48 w-48 rounded-full bg-gradient-brand shadow-elevated"
+            className={`relative rounded-full bg-gradient-brand shadow-elevated ${state === "idle" ? "h-56 w-56" : "h-48 w-48"}`}
             style={{ animation: "orb-float 4s ease-in-out infinite" }}
             animate={{ scale: state === "speaking" ? [1, 1.04, 1] : 1 }}
             transition={{ duration: 0.9, repeat: state === "speaking" ? Infinity : 0 }}
@@ -164,31 +167,39 @@ function VoicePage() {
             </AnimatePresence>
           </div>
 
-          <div className="mt-6 flex items-center justify-center gap-5">
-            <button
-              onClick={toggleMute}
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-card transition active:scale-95"
-              aria-label={muted ? "Uključi mikrofon" : "Utišaj"}
-            >
-              {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-            </button>
+          {state !== "idle" && (
+            <div className="mt-6 flex items-center justify-center gap-5">
+              <button
+                onClick={toggleMute}
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-card transition active:scale-95"
+                aria-label={muted ? "Uključi mikrofon" : "Utišaj"}
+              >
+                {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+              </button>
 
-            <button
-              onClick={onPhoneButton}
-              className="flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--brand-red)] text-white shadow-elevated transition active:scale-95"
-              aria-label={state === "idle" ? "Pokreni poziv" : "Prekini"}
-            >
-              <PhoneOff className="h-6 w-6" />
-            </button>
+              <button
+                onClick={onPhoneButton}
+                className="flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--brand-red)] text-white shadow-elevated transition active:scale-95"
+                aria-label="Prekini"
+              >
+                <PhoneOff className="h-6 w-6" />
+              </button>
 
-            <Link
-              to="/chat"
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-card transition active:scale-95"
-              aria-label="Chat"
-            >
-              <Keyboard className="h-5 w-5" />
-            </Link>
-          </div>
+              <Link
+                to="/chat"
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-card transition active:scale-95"
+                aria-label="Chat"
+              >
+                <Keyboard className="h-5 w-5" />
+              </Link>
+            </div>
+          )}
+
+          {state === "idle" && (
+            <p className="mt-6 text-center text-sm font-medium text-muted-foreground">
+              Tap to start
+            </p>
+          )}
 
           <div className="mt-4 text-center">
             <Link to="/chat" className="text-sm font-semibold text-gradient-brand">
