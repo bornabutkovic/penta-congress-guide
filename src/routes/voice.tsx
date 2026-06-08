@@ -19,8 +19,14 @@ export const Route = createFileRoute("/voice")({
 
 type OrbState = "idle" | "listening" | "speaking";
 
-const RETELL_API_KEY = "YOUR_RETELL_API_KEY";
 const AGENT_ID = "agent_7108f761dd1304a9998d2003ab";
+const RETELL_API_KEY = "key_f78549c8884e3d2a3bb39dd00ba5";
+
+const mockUser = {
+  name: "Test User",
+  email: "test@penta.hr",
+  phone: "+38500000000",
+};
 
 function VoicePage() {
   const [state, setState] = useState<OrbState>("idle");
@@ -68,19 +74,19 @@ function VoicePage() {
       const res = await fetch("https://api.retellai.com/v2/create-web-call", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${RETELL_API_KEY}`,
+          "Authorization": `Bearer ${RETELL_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           agent_id: AGENT_ID,
           retell_llm_dynamic_variables: {
-            client_name: "Test User",
-            client_email: "test@penta.hr",
-            client_phone: "+38500000000",
+            client_name: mockUser.name,
+            client_email: mockUser.email,
+            client_phone: mockUser.phone,
           },
         }),
       });
-      if (!res.ok) throw new Error(`create-web-call failed: ${res.status}`);
+      if (!res.ok) throw new Error(`Token request failed: ${res.status}`);
       const data = await res.json();
       const accessToken = data.access_token;
       if (!accessToken) throw new Error("No access_token in response");
