@@ -19,24 +19,28 @@ export const Route = createFileRoute("/voice")({
 
 type OrbState = "idle" | "listening" | "speaking";
 
-const AGENT_ID = "YOUR_AGENT_ID";
-const TOKEN_URL = "https://penta.app.n8n.cloud/webhook/retell-token";
-const mockUser = { name: "Test User", email: "test@penta.hr", phone: "+38500000000" };
+const RETELL_API_KEY = "YOUR_RETELL_API_KEY";
+const AGENT_ID = "agent_7108f761dd1304a9998d2003ab";
 
 function VoicePage() {
   const [state, setState] = useState<OrbState>("idle");
   const [muted, setMuted] = useState(false);
-  const [transcript, setTranscript] = useState("Dodirnite mikrofon za početak razgovora.");
-  const clientRef = useRef<RetellWebClient | null>(null);
+  const [transcript, setTranscript] = useState("Dodirnite mikrofon za početak...");
+  const retellClientRef = useRef<RetellWebClient | null>(null);
+  const stateRef = useRef<OrbState>("idle");
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     const client = new RetellWebClient();
-    clientRef.current = client;
+    retellClientRef.current = client;
 
     client.on("call_started", () => setState("listening"));
+    client.on("call_ended", () => setState("idle"));
     client.on("agent_start_talking", () => setState("speaking"));
     client.on("agent_stop_talking", () => setState("listening"));
-    client.on("call_ended", () => setState("idle"));
     client.on("error", (err: unknown) => {
       console.error("Retell error", err);
       setState("idle");
@@ -47,39 +51,41 @@ function VoicePage() {
         setTranscript(update.transcript);
       } else if (Array.isArray(update.transcript) && update.transcript.length > 0) {
         const last = update.transcript[update.transcript.length - 1];
-        setTranscript(last.content);
+        if (last?.content) setTranscript(last.content);
       }
     });
 
     return () => {
-      try {
-        client.stopCall();
-      } catch {
-        // ignore
+      if (stateRef.current !== "idle") {
+        try { client.stopCall(); } catch { /* noop */ }
       }
     };
   }, []);
 
   const startCall = async () => {
     try {
-      setState("listening");
       setTranscript("Povezivanje...");
-      const res = await fetch(TOKEN_URL, {
+      const res = await fetch("https://api.retellai.com/v2/create-web-call", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${RETELL_API_KEY}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           agent_id: AGENT_ID,
-          client_name: mockUser.name,
-          client_email: mockUser.email,
-          client_phone: mockUser.phone,
+          retell_llm_dynamic_variables: {
+            client_name: "Test User",
+            client_email: "test@penta.hr",
+            client_phone: "+38500000000",
+          },
         }),
       });
-      if (!res.ok) throw new Error(`Token request failed: ${res.status}`);
+      if (!res.ok) throw new Error(`create-web-call failed: ${res.status}`);
       const data = await res.json();
-      const accessToken = data.access_token ?? data.accessToken ?? data.token;
-      if (!accessToken) throw new Error("No access token in response");
+      const accessToken = data.access_token;
+      if (!accessToken) throw new Error("No access_token in response");
 
-      await clientRef.current?.startCall({
+      await retellClientRef.current?.startCall({
         accessToken,
         sampleRate: 24000,
       });
@@ -90,13 +96,17 @@ function VoicePage() {
     }
   };
 
-  const endCall = () => {
-    clientRef.current?.stopCall();
-    setState("idle");
+  const onPhoneButton = () => {
+    if (state === "idle") {
+      startCall();
+    } else {
+      try { retellClientRef.current?.stopCall(); } catch { /* noop */ }
+      setState("idle");
+    }
   };
 
   const toggleMute = () => {
-    const client = clientRef.current;
+    const client = retellClientRef.current;
     if (!client) return;
     if (muted) {
       try { client.unmute?.(); } catch { /* noop */ }
@@ -104,11 +114,6 @@ function VoicePage() {
       try { client.mute?.(); } catch { /* noop */ }
     }
     setMuted((m) => !m);
-  };
-
-  const onMicPress = () => {
-    if (state === "idle") startCall();
-    else toggleMute();
   };
 
   return (
@@ -160,17 +165,17 @@ function VoicePage() {
 
           <div className="mt-6 flex items-center justify-center gap-5">
             <button
-              onClick={onMicPress}
+              onClick={toggleMute}
               className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-card transition active:scale-95"
-              aria-label={state === "idle" ? "Pokreni poziv" : "Utišaj"}
+              aria-label={muted ? "Uključi mikrofon" : "Utišaj"}
             >
               {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
             </button>
 
             <button
-              onClick={endCall}
+              onClick={onPhoneButton}
               className="flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--brand-red)] text-white shadow-elevated transition active:scale-95"
-              aria-label="Prekini"
+              aria-label={state === "idle" ? "Pokreni poziv" : "Prekini"}
             >
               <PhoneOff className="h-6 w-6" />
             </button>
