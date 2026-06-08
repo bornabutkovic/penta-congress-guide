@@ -22,6 +22,12 @@ type OrbState = "idle" | "listening" | "speaking";
 const AGENT_ID = "agent_7108f761dd1304a9998d2003ab";
 const RETELL_API_KEY = "key_f78549c8884e3d2a3bb39dd00ba5";
 
+const mockUser = {
+  name: "Test User",
+  email: "test@penta.hr",
+  phone: "+38500000000",
+};
+
 function VoicePage() {
   const [state, setState] = useState<OrbState>("idle");
   const [muted, setMuted] = useState(false);
