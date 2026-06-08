@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { MobileFrame } from "@/components/MobileFrame";
 import { BottomNav } from "@/components/BottomNav";
 import { PageHeader } from "@/components/PageHeader";
@@ -33,6 +34,7 @@ interface FormState {
   flight_needed: boolean;
   hotel_needed: boolean;
   transfer_needed: boolean;
+  transfer_address: string;
 }
 
 const initialState: FormState = {
@@ -48,6 +50,7 @@ const initialState: FormState = {
   flight_needed: true,
   hotel_needed: true,
   transfer_needed: true,
+  transfer_address: "",
 };
 
 type Errors = Partial<Record<keyof FormState, string>>;
@@ -101,6 +104,9 @@ function NovaPonudaPage() {
     if (form.checkin && form.checkout && form.checkout <= form.checkin) {
       e.checkout = "Datum odlaska mora biti nakon dolaska";
     }
+    if (form.transfer_needed && !form.transfer_address.trim()) {
+      e.transfer_address = "Obavezno polje";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -128,6 +134,7 @@ function NovaPonudaPage() {
           flight_needed: form.flight_needed,
           hotel_needed: form.hotel_needed,
           transfer_needed: form.transfer_needed,
+          transfer_address: form.transfer_needed ? form.transfer_address.trim() : null,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -310,6 +317,32 @@ function NovaPonudaPage() {
                 </label>
               ))}
             </div>
+
+            <AnimatePresence initial={false}>
+              {form.transfer_needed && (
+                <motion.div
+                  key="transfer_address"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-3">
+                    <FieldLabel htmlFor="transfer_address">Adresa polaska</FieldLabel>
+                    <input
+                      id="transfer_address"
+                      type="text"
+                      placeholder="npr. Ilica 42, Zagreb"
+                      className={inputClass}
+                      value={form.transfer_address}
+                      onChange={(e) => update("transfer_address", e.target.value)}
+                    />
+                    <ErrorText msg={errors.transfer_address} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <button
               type="submit"
