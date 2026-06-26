@@ -1,10 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plane, Mic, ListChecks, ChevronRight, Bell } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Plane, Mic, ListChecks, ChevronRight, Bell, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { MobileFrame } from "@/components/MobileFrame";
 import { BottomNav } from "@/components/BottomNav";
 import { StatusBadge } from "@/components/StatusBadge";
 import { quotes, formatEur } from "@/lib/mock-data";
+import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/penta-logo.webp";
 
 export const Route = createFileRoute("/home")({
