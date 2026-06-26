@@ -4,8 +4,19 @@ import { motion } from "framer-motion";
 import { MobileFrame } from "@/components/MobileFrame";
 import { BottomNav } from "@/components/BottomNav";
 import { StatusBadge } from "@/components/StatusBadge";
-import { quotes, formatEur } from "@/lib/mock-data";
+import { formatEur, type QuoteStatus } from "@/lib/mock-data";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuotes, parseRequestData, type QuoteDbStatus } from "@/hooks/useQuotes";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const statusMap: Record<QuoteDbStatus, QuoteStatus> = {
+  draft: "pending",
+  pending_approval: "pending",
+  approved: "approved",
+  sent: "sent",
+  rejected: "rejected",
+  error: "rejected",
+};
 import logo from "@/assets/penta-logo.webp";
 
 export const Route = createFileRoute("/home")({
@@ -25,6 +36,7 @@ const actions = [
 ] as const;
 
 function HomePage() {
+  const { quotes, loading } = useQuotes();
   const recent = quotes.slice(0, 3);
   const { signOut } = useAuth();
   const navigate = useNavigate();
@@ -97,30 +109,51 @@ function HomePage() {
           </div>
 
           <ul className="mt-3 flex flex-col gap-3">
-            {recent.map((q) => (
-              <li key={q.id}>
-                <Link
-                  to="/ponude/$id"
-                  params={{ id: q.id }}
-                  className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-card transition active:scale-[0.99]"
-                >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-brand-soft">
-                    <span className="text-sm font-bold text-gradient-brand">{q.shortName.split(" ")[0].slice(0,3).toUpperCase()}</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{q.congress}</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <StatusBadge status={q.status} />
-                      <span className="text-xs text-muted-foreground truncate">{q.city}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-gradient-brand">{formatEur(q.total)}</p>
-                    <ChevronRight className="ml-auto mt-1 h-4 w-4 text-muted-foreground" />
-                  </div>
-                </Link>
+            {loading && [0, 1, 2].map((i) => (
+              <li key={i} className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-card">
+                <Skeleton className="h-12 w-12 rounded-2xl" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-2/3" />
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+                <Skeleton className="h-4 w-12" />
               </li>
             ))}
+            {!loading && recent.length === 0 && (
+              <li className="rounded-2xl bg-card p-6 text-center text-sm text-muted-foreground shadow-card">
+                Nema ponuda.
+              </li>
+            )}
+            {!loading && recent.map((q) => {
+              const data = parseRequestData(q.request_data);
+              const congressName = (data.congress_name as string) || q.client_name || "Ponuda";
+              const initials = congressName.split(" ")[0].slice(0, 3).toUpperCase();
+              return (
+                <li key={q.id}>
+                  <Link
+                    to="/ponude/$id"
+                    params={{ id: q.id }}
+                    className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-card transition active:scale-[0.99]"
+                  >
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-brand-soft">
+                      <span className="text-sm font-bold text-gradient-brand">{initials}</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{congressName}</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <StatusBadge status={statusMap[q.status] ?? "pending"} />
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gradient-brand">
+                        {q.total_price ? formatEur(q.total_price) : "Na upit"}
+                      </p>
+                      <ChevronRight className="ml-auto mt-1 h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </section>
       </div>
