@@ -118,6 +118,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          language: string | null
           name: string | null
           whatsapp_number: string
         }
@@ -126,6 +127,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          language?: string | null
           name?: string | null
           whatsapp_number: string
         }
@@ -134,6 +136,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          language?: string | null
           name?: string | null
           whatsapp_number?: string
         }

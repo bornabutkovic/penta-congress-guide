@@ -1,10 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plane, Mic, ListChecks, ChevronRight, Bell } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Plane, Mic, ListChecks, ChevronRight, Bell, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { MobileFrame } from "@/components/MobileFrame";
 import { BottomNav } from "@/components/BottomNav";
 import { StatusBadge } from "@/components/StatusBadge";
 import { quotes, formatEur } from "@/lib/mock-data";
+import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/penta-logo.webp";
 
 export const Route = createFileRoute("/home")({
@@ -25,6 +26,13 @@ const actions = [
 
 function HomePage() {
   const recent = quotes.slice(0, 3);
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate({ to: "/", replace: true });
+  };
 
   return (
     <MobileFrame>
@@ -37,10 +45,19 @@ function HomePage() {
               </div>
               <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Penta</div>
             </div>
-            <button className="relative h-10 w-10 rounded-full bg-white shadow-card flex items-center justify-center">
-              <Bell className="h-4 w-4" />
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-gradient-brand" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button className="relative h-10 w-10 rounded-full bg-white shadow-card flex items-center justify-center">
+                <Bell className="h-4 w-4" />
+                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-gradient-brand" />
+              </button>
+              <button
+                onClick={handleLogout}
+                aria-label="Odjava"
+                className="h-10 w-10 rounded-full bg-white shadow-card flex items-center justify-center"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-6">

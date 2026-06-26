@@ -4,9 +4,13 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
+  useNavigate,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 import appCss from "../styles.css?url";
 
@@ -111,7 +115,33 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <AuthGate>
+        <Outlet />
+      </AuthGate>
     </QueryClientProvider>
   );
+}
+
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user && pathname !== "/") {
+      navigate({ to: "/", replace: true });
+    }
+  }, [user, loading, pathname, navigate]);
+
+  if (loading && pathname !== "/") {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-background">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!user && pathname !== "/") return null;
+  return <>{children}</>;
 }

@@ -1,7 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import logo from "@/assets/penta-logo.webp";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -15,12 +17,27 @@ export const Route = createFileRoute("/")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("marko@klinika.hr");
-  const [password, setPassword] = useState("••••••••");
+  const { signIn, user, loading: authLoading } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const submit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!authLoading && user) navigate({ to: "/home", replace: true });
+  }, [user, authLoading, navigate]);
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate({ to: "/home" });
+    setError(null);
+    setSubmitting(true);
+    const { error: err } = await signIn(email, password);
+    setSubmitting(false);
+    if (err) {
+      setError("Pogrešan email ili lozinka.");
+      return;
+    }
+    navigate({ to: "/home", replace: true });
   };
 
   return (
@@ -53,6 +70,8 @@ function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
               className="h-12 rounded-2xl border border-border bg-white px-4 text-sm shadow-card focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-orange)]/40"
               placeholder="vase.ime@klinika.hr"
             />
@@ -63,6 +82,8 @@ function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
               className="h-12 rounded-2xl border border-border bg-white px-4 text-sm shadow-card focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-orange)]/40"
               placeholder="••••••••"
             />
@@ -70,19 +91,27 @@ function LoginPage() {
 
           <button
             type="submit"
-            className="mt-2 h-13 rounded-2xl bg-gradient-brand py-3.5 text-base font-semibold text-white shadow-elevated transition active:scale-[0.98]"
+            disabled={submitting}
+            className="mt-2 h-13 rounded-2xl bg-gradient-brand py-3.5 text-base font-semibold text-white shadow-elevated transition active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
           >
-            Prijava
+            {submitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Prijavljivanje...
+              </>
+            ) : (
+              "Prijava"
+            )}
           </button>
+
+          {error && (
+            <p className="text-center text-sm font-medium text-red-600">{error}</p>
+          )}
 
           <button type="button" className="text-center text-sm font-medium text-muted-foreground py-2">
             Zaboravljena lozinka?
           </button>
         </motion.form>
-
-        <div className="mt-auto pt-10 text-center text-xs text-muted-foreground">
-          <Link to="/home" className="text-gradient-brand font-semibold">Nastavi kao gost →</Link>
-        </div>
       </div>
     </div>
   );
