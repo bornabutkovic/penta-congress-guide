@@ -320,6 +320,30 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          company: string
+          created_at: string
+          full_name: string
+          id: string
+          role: string
+        }
+        Insert: {
+          company?: string
+          created_at?: string
+          full_name?: string
+          id: string
+          role?: string
+        }
+        Update: {
+          company?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          role?: string
+        }
+        Relationships: []
+      }
       quote_approvals: {
         Row: {
           action: string
