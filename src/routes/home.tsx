@@ -4,8 +4,19 @@ import { motion } from "framer-motion";
 import { MobileFrame } from "@/components/MobileFrame";
 import { BottomNav } from "@/components/BottomNav";
 import { StatusBadge } from "@/components/StatusBadge";
-import { quotes, formatEur } from "@/lib/mock-data";
+import { formatEur, type QuoteStatus } from "@/lib/mock-data";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuotes, parseRequestData, type QuoteDbStatus } from "@/hooks/useQuotes";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const statusMap: Record<QuoteDbStatus, QuoteStatus> = {
+  draft: "pending",
+  pending_approval: "pending",
+  approved: "approved",
+  sent: "sent",
+  rejected: "rejected",
+  error: "rejected",
+};
 import logo from "@/assets/penta-logo.webp";
 
 export const Route = createFileRoute("/home")({
