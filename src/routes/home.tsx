@@ -6,6 +6,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatEur, type QuoteStatus } from "@/lib/mock-data";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { useQuotes, parseRequestData, type QuoteDbStatus } from "@/hooks/useQuotes";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -39,6 +40,7 @@ function HomePage() {
   const { quotes, loading } = useQuotes();
   const recent = quotes.slice(0, 3);
   const { signOut } = useAuth();
+  const { profile } = useProfile();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -73,7 +75,7 @@ function HomePage() {
           </div>
 
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
-            <h1 className="text-[26px] font-bold leading-tight">Dobrodošli, Marko! 👋</h1>
+            <h1 className="text-[26px] font-bold leading-tight">{"Dobrodošli, " + (profile?.full_name?.split(" ")[0] ?? "...") + "! 👋"}</h1>
             <p className="mt-1 text-sm text-muted-foreground">Spreman za sljedeći kongres?</p>
           </motion.div>
         </header>
