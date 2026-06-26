@@ -36,6 +36,7 @@ const actions = [
 ] as const;
 
 function HomePage() {
+  const { quotes, loading } = useQuotes();
   const recent = quotes.slice(0, 3);
   const { signOut } = useAuth();
   const navigate = useNavigate();
