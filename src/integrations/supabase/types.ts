@@ -510,7 +510,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      match_4star_hotels: { Args: { candidates: Json }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
