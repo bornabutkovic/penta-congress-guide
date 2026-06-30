@@ -57,64 +57,85 @@ function ChatPage() {
         right={<span className="inline-flex h-2 w-2 rounded-full bg-[color:var(--status-approved)]" aria-label="online" />}
       />
 
-      <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-3 bg-surface">
-        {messages.map((m) => (
-          <motion.div
-            key={m.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}
-          >
-            {m.role === "agent" && (
-              <div className="h-7 w-7 shrink-0 rounded-full bg-white shadow-card flex items-center justify-center overflow-hidden">
-                <img src={logo} alt="" className="h-4 w-auto" />
-              </div>
-            )}
-            <div
-              className={
-                m.role === "user"
-                  ? "max-w-[78%] rounded-2xl rounded-br-md bg-gradient-brand px-4 py-2.5 text-sm text-white shadow-card"
-                  : "max-w-[78%] rounded-2xl rounded-bl-md bg-[#F1F5F9] px-4 py-2.5 text-sm text-foreground"
-              }
-            >
-              {m.text}
-            </div>
-          </motion.div>
-        ))}
-      </div>
+      {false && (
+        <>
+          <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-3 bg-surface">
+            {messages.map((m) => (
+              <motion.div
+                key={m.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}
+              >
+                {m.role === "agent" && (
+                  <div className="h-7 w-7 shrink-0 rounded-full bg-white shadow-card flex items-center justify-center overflow-hidden">
+                    <img src={logo} alt="" className="h-4 w-auto" />
+                  </div>
+                )}
+                <div
+                  className={
+                    m.role === "user"
+                      ? "max-w-[78%] rounded-2xl rounded-br-md bg-gradient-brand px-4 py-2.5 text-sm text-white shadow-card"
+                      : "max-w-[78%] rounded-2xl rounded-bl-md bg-[#F1F5F9] px-4 py-2.5 text-sm text-foreground"
+                  }
+                >
+                  {m.text}
+                </div>
+              </motion.div>
+            ))}
+          </div>
 
-      <div className="border-t border-border bg-background px-4 py-3">
-        <div className="mb-2 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [-ms-overflow-style:none]">
-          {quickReplies.map((q) => (
-            <button
-              key={q}
-              onClick={() => send(q)}
-              className="whitespace-nowrap rounded-full border-gradient-brand px-3.5 py-1.5 text-xs font-semibold text-gradient-brand"
+          <div className="border-t border-border bg-background px-4 py-3">
+            <div className="mb-2 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [-ms-overflow-style:none]">
+              {quickReplies.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => send(q)}
+                  className="whitespace-nowrap rounded-full border-gradient-brand px-3.5 py-1.5 text-xs font-semibold text-gradient-brand"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+            <form
+              onSubmit={(e) => { e.preventDefault(); send(input); }}
+              className="flex items-center gap-2 rounded-full bg-secondary px-2 py-1.5"
             >
-              {q}
-            </button>
-          ))}
-        </div>
-        <form
-          onSubmit={(e) => { e.preventDefault(); send(input); }}
-          className="flex items-center gap-2 rounded-full bg-secondary px-2 py-1.5"
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Pišite poruku..."
+                className="flex-1 bg-transparent px-3 text-sm focus:outline-none"
+              />
+              {input.trim() ? (
+                <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-white shadow-elevated">
+                  <Send className="h-4 w-4" />
+                </button>
+              ) : (
+                <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-white shadow-elevated">
+                  <Mic className="h-4 w-4" />
+                </button>
+              )}
+            </form>
+          </div>
+        </>
+      )}
+
+      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center bg-surface">
+        <p className="text-lg font-semibold text-foreground mb-2">
+          Chat trenutno nije dostupan.
+        </p>
+        <p className="text-sm text-muted-foreground mb-6">
+          Kontaktirajte nas putem WhatsAppa.
+        </p>
+        <a
+          href="https://wa.me/385916059712"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-brand px-8 py-3 text-sm font-semibold text-white shadow-elevated active:opacity-90"
         >
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Pišite poruku..."
-            className="flex-1 bg-transparent px-3 text-sm focus:outline-none"
-          />
-          {input.trim() ? (
-            <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-white shadow-elevated">
-              <Send className="h-4 w-4" />
-            </button>
-          ) : (
-            <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-white shadow-elevated">
-              <Mic className="h-4 w-4" />
-            </button>
-          )}
-        </form>
+          Otvori WhatsApp
+        </a>
       </div>
 
       <BottomNav />
