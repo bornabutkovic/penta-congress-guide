@@ -1,5 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import type { QuoteStatus } from "@/lib/mock-data";
+
+export const statusMap: Record<QuoteDbStatus, QuoteStatus> = {
+  draft: "pending",
+  pending_approval: "pending",
+  approved: "approved",
+  sent: "sent",
+  rejected: "rejected",
+  error: "rejected",
+};
+
+export const formatEur = (n: number) =>
+  new Intl.NumberFormat("hr-HR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
 
 export type QuoteDbStatus =
   | "draft"
