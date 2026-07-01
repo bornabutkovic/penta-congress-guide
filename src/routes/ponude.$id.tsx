@@ -1,89 +1,220 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Plane, BedDouble, Car, Ticket, MapPin, Calendar, Check } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MobileFrame } from "@/components/MobileFrame";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
-import { quotes, formatEur, type Quote } from "@/lib/mock-data";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/lib/supabase";
+import {
+  parseRequestData,
+  statusMap,
+  formatEur,
+  type Quote,
+  type QuoteDbStatus,
+} from "@/hooks/useQuotes";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/ponude/$id")({
-  loader: ({ params }) => {
-    const quote = quotes.find((q) => q.id === params.id);
-    if (!quote) throw notFound();
-    return { quote };
-  },
-  head: ({ loaderData }) => ({
+  head: () => ({
     meta: [
-      { title: `Penta — ${loaderData?.quote.congress ?? "Ponuda"}` },
-      { name: "description", content: `Detalji ponude: ${loaderData?.quote.congress ?? ""}` },
+      { title: "Penta — Ponuda" },
+      { name: "description", content: "Detalji ponude." },
     ],
   }),
-  notFoundComponent: () => (
-    <MobileFrame>
-      <PageHeader title="Ponuda" />
-      <div className="flex flex-1 items-center justify-center p-8 text-center text-sm text-muted-foreground">
-        Ponuda nije pronađena.
-      </div>
-    </MobileFrame>
-  ),
-  errorComponent: ({ error }) => (
-    <MobileFrame>
-      <PageHeader title="Greška" />
-      <div className="flex flex-1 items-center justify-center p-8 text-center text-sm text-muted-foreground">
-        {error.message}
-      </div>
-    </MobileFrame>
-  ),
   component: QuoteDetailPage,
 });
 
 const timelineSteps = ["Kreirano", "Na pregledu", "Odobreno", "Poslano"] as const;
 
-function currentStep(status: Quote["status"]) {
+function currentStep(status: QuoteDbStatus) {
   switch (status) {
-    case "pending": return 1;
     case "approved": return 2;
     case "sent": return 3;
-    case "rejected": return 1;
+    case "draft":
+    case "pending_approval":
+    case "rejected":
+    case "error":
+    default:
+      return 1;
   }
 }
 
+function pick(obj: Record<string, unknown>, keys: string[]): string | undefined {
+  for (const k of keys) {
+    const v = obj?.[k];
+    if (v !== undefined && v !== null && v !== "") return String(v);
+  }
+  return undefined;
+}
+
+function pickNum(obj: Record<string, unknown>, keys: string[]): number | undefined {
+  for (const k of keys) {
+    const v = obj?.[k];
+    if (v === undefined || v === null || v === "") continue;
+    const n = typeof v === "number" ? v : Number(v);
+    if (!Number.isNaN(n)) return n;
+  }
+  return undefined;
+}
+
 function QuoteDetailPage() {
-  const { quote } = Route.useLoaderData();
+  const { id } = Route.useParams();
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>("flight");
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    supabase
+      .from("quotes")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) setError(error.message);
+        setQuote((data as unknown as Quote) ?? null);
+        setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <MobileFrame>
+        <PageHeader title="Detalji ponude" />
+        <div className="flex-1 overflow-y-auto bg-surface p-5 space-y-3">
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <Skeleton className="h-16 w-full rounded-2xl" />
+          <Skeleton className="h-16 w-full rounded-2xl" />
+        </div>
+      </MobileFrame>
+    );
+  }
+
+  if (error) {
+    return (
+      <MobileFrame>
+        <PageHeader title="Greška" />
+        <div className="flex flex-1 items-center justify-center p-8 text-center text-sm text-muted-foreground">
+          {error}
+        </div>
+      </MobileFrame>
+    );
+  }
+
+  if (!quote) {
+    return (
+      <MobileFrame>
+        <PageHeader title="Ponuda" />
+        <div className="flex flex-1 items-center justify-center p-8 text-center text-sm text-muted-foreground">
+          Ponuda nije pronađena.
+        </div>
+      </MobileFrame>
+    );
+  }
+
+  const req = parseRequestData(quote.request_data);
+  const flight = parseRequestData(quote.flight_data);
+  const hotel = parseRequestData(quote.hotel_data);
+  const transfer = parseRequestData(quote.transfer_data);
+  const fee = parseRequestData(quote.fee_data);
+
+  const congressName = (req.congress_name as string) || quote.client_name || "Ponuda";
+  const city = (req.city as string) || "";
+  const country = (req.country as string) || "";
+  const checkin = req.checkin as string | undefined;
+  const checkout = req.checkout as string | undefined;
+  const dates = checkin && checkout ? `${checkin} – ${checkout}` : checkin || checkout || "";
+  const origin = (req.origin_city as string) || "";
+
+  const uiStatus = statusMap[quote.status] ?? "pending";
   const step = currentStep(quote.status);
 
+  const has = (o: Record<string, unknown>) => o && Object.keys(o).length > 0;
+
   const sections = [
-    { key: "flight", label: "Let", icon: Plane, body: (
-      <div className="text-sm space-y-1.5">
-        <p><span className="text-muted-foreground">Ruta:</span> <b>{quote.sections.flight.from} → {quote.sections.flight.to}</b></p>
-        <p><span className="text-muted-foreground">Aviokompanija:</span> {quote.sections.flight.airline}</p>
-        <p><span className="text-muted-foreground">Datumi:</span> {quote.sections.flight.dates}</p>
-        <p className="pt-1 font-bold">{formatEur(quote.sections.flight.price)}</p>
-      </div>
-    )},
-    { key: "hotel", label: "Smještaj", icon: BedDouble, body: (
-      <div className="text-sm space-y-1.5">
-        <p><b>{quote.sections.hotel.name}</b></p>
-        <p><span className="text-muted-foreground">Soba:</span> {quote.sections.hotel.room}</p>
-        <p><span className="text-muted-foreground">Noćenja:</span> {quote.sections.hotel.nights}</p>
-        <p className="pt-1 font-bold">{formatEur(quote.sections.hotel.price)}</p>
-      </div>
-    )},
-    { key: "transfer", label: "Transfer", icon: Car, body: (
-      <div className="text-sm space-y-1.5">
-        <p>{quote.sections.transfer.type}</p>
-        <p className="pt-1 font-bold">{formatEur(quote.sections.transfer.price)}</p>
-      </div>
-    )},
-    { key: "fee", label: "Kotizacija", icon: Ticket, body: (
-      <div className="text-sm space-y-1.5">
-        <p>{quote.sections.fee.name}</p>
-        <p className="pt-1 font-bold">{formatEur(quote.sections.fee.price)}</p>
-      </div>
-    )},
+    {
+      key: "flight",
+      label: "Let",
+      icon: Plane,
+      present: has(flight),
+      body: (() => {
+        const from = pick(flight, ["from", "origin", "origin_city", "departure"]) || origin;
+        const to = pick(flight, ["to", "destination", "arrival"]) || city;
+        const airline = pick(flight, ["airline", "carrier"]);
+        const flightDates = pick(flight, ["dates", "date", "departure_date"]);
+        const price = pickNum(flight, ["price", "total", "amount"]);
+        return (
+          <div className="text-sm space-y-1.5">
+            {(from || to) && (
+              <p><span className="text-muted-foreground">Ruta:</span> <b>{from} → {to}</b></p>
+            )}
+            {airline && <p><span className="text-muted-foreground">Aviokompanija:</span> {airline}</p>}
+            {flightDates && <p><span className="text-muted-foreground">Datumi:</span> {flightDates}</p>}
+            {price !== undefined && <p className="pt-1 font-bold">{formatEur(price)}</p>}
+          </div>
+        );
+      })(),
+    },
+    {
+      key: "hotel",
+      label: "Smještaj",
+      icon: BedDouble,
+      present: has(hotel),
+      body: (() => {
+        const name = pick(hotel, ["name", "hotel_name", "hotel"]);
+        const room = pick(hotel, ["room", "room_name", "room_type"]);
+        const nights = pick(hotel, ["nights"]);
+        const price = pickNum(hotel, ["price", "total", "amount"]);
+        return (
+          <div className="text-sm space-y-1.5">
+            {name && <p><b>{name}</b></p>}
+            {room && <p><span className="text-muted-foreground">Soba:</span> {room}</p>}
+            {nights && <p><span className="text-muted-foreground">Noćenja:</span> {nights}</p>}
+            {price !== undefined && <p className="pt-1 font-bold">{formatEur(price)}</p>}
+          </div>
+        );
+      })(),
+    },
+    {
+      key: "transfer",
+      label: "Transfer",
+      icon: Car,
+      present: has(transfer),
+      body: (() => {
+        const type = pick(transfer, ["type", "name", "description"]);
+        const price = pickNum(transfer, ["price", "total", "amount"]);
+        return (
+          <div className="text-sm space-y-1.5">
+            {type && <p>{type}</p>}
+            {price !== undefined && <p className="pt-1 font-bold">{formatEur(price)}</p>}
+          </div>
+        );
+      })(),
+    },
+    {
+      key: "fee",
+      label: "Kotizacija",
+      icon: Ticket,
+      present: has(fee),
+      body: (() => {
+        const name = pick(fee, ["name", "type", "description"]);
+        const price = pickNum(fee, ["price", "total", "amount"]);
+        return (
+          <div className="text-sm space-y-1.5">
+            {name && <p>{name}</p>}
+            {price !== undefined && <p className="pt-1 font-bold">{formatEur(price)}</p>}
+          </div>
+        );
+      })(),
+    },
   ];
 
   return (
@@ -91,30 +222,36 @@ function QuoteDetailPage() {
       <PageHeader title="Detalji ponude" />
 
       <div className="flex-1 overflow-y-auto bg-surface">
-        {/* Header card */}
         <div className="relative px-5 pt-5 pb-6 bg-gradient-bg">
           <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-brand" />
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="text-lg font-bold leading-tight">{quote.congress}</h2>
+              <h2 className="text-lg font-bold leading-tight">{congressName}</h2>
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{quote.city}, {quote.country}</span>
-                <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />{quote.dates}</span>
+                {(city || country) && (
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />{[city, country].filter(Boolean).join(", ")}
+                  </span>
+                )}
+                {dates && (
+                  <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />{dates}</span>
+                )}
               </div>
             </div>
-            <StatusBadge status={quote.status} />
+            <StatusBadge status={uiStatus} />
           </div>
 
           <div className="mt-5 rounded-2xl bg-white p-4 shadow-card">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ukupno</p>
-            <p className="mt-1 text-3xl font-extrabold text-gradient-brand">{formatEur(quote.total)}</p>
+            <p className="mt-1 text-3xl font-extrabold text-gradient-brand">
+              {quote.total_price ? formatEur(Number(quote.total_price)) : "Na upit"}
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">Uključuje sve stavke ponude</p>
           </div>
         </div>
 
-        {/* Sections accordion */}
         <div className="px-5 mt-4 space-y-3">
-          {sections.map(({ key, label, icon: Icon, body }) => {
+          {sections.map(({ key, label, icon: Icon, present, body }) => {
             const isOpen = open === key;
             return (
               <div key={key} className="rounded-2xl bg-card shadow-card overflow-hidden">
@@ -133,14 +270,17 @@ function QuoteDetailPage() {
                   animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
                   className="overflow-hidden"
                 >
-                  <div className="px-4 pb-4 pl-[68px]">{body}</div>
+                  <div className="px-4 pb-4 pl-[68px]">
+                    {present ? body : (
+                      <p className="text-sm text-muted-foreground">Nije uključeno u ponudu</p>
+                    )}
+                  </div>
                 </motion.div>
               </div>
             );
           })}
         </div>
 
-        {/* Timeline */}
         <div className="px-5 mt-6 mb-8">
           <h3 className="mb-3 text-sm font-semibold">Status</h3>
           <div className="rounded-2xl bg-card p-5 shadow-card">
@@ -165,12 +305,6 @@ function QuoteDetailPage() {
               })}
             </ol>
           </div>
-        </div>
-
-        <div className="px-5 pb-8">
-          <button className="w-full rounded-2xl bg-gradient-brand py-3.5 text-sm font-semibold text-white shadow-elevated active:scale-[0.99]">
-            Pošalji na odobrenje
-          </button>
         </div>
       </div>
     </MobileFrame>
