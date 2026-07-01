@@ -30,6 +30,10 @@ export interface Quote {
   total_price: number | null;
   html_content: string | null;
   request_data: string;
+  flight_data: string | null;
+  hotel_data: string | null;
+  transfer_data: string | null;
+  fee_data: string | null;
   created_at: string;
 }
 
