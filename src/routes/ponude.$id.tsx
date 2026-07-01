@@ -72,29 +72,88 @@ function pickNum(obj: Record<string, unknown>, keys: string[]): number | undefin
 
 function QuoteDetailPage() {
   const { id } = Route.useParams();
+  const { user } = useAuth();
+  const { profile } = useProfile();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>("flight");
+  const [mutating, setMutating] = useState<null | "approve" | "reject">(null);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectComment, setRejectComment] = useState("");
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    supabase
+  const fetchQuote = useCallback(async () => {
+    const { data, error } = await supabase
       .from("quotes")
       .select("*")
       .eq("id", id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (!active) return;
-        if (error) setError(error.message);
-        setQuote((data as unknown as Quote) ?? null);
-        setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+      .maybeSingle();
+    if (error) setError(error.message);
+    setQuote((data as unknown as Quote) ?? null);
+    setLoading(false);
   }, [id]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchQuote();
+  }, [fetchQuote]);
+
+  const approvedBy = profile?.full_name || user?.email || "agent";
+  const isAgent = profile?.role === "agent";
+
+  async function handleApprove() {
+    if (!quote) return;
+    setMutating("approve");
+    try {
+      const nowIso = new Date().toISOString();
+      const { error: upErr } = await supabase
+        .from("quotes")
+        .update({ status: "approved", approved_at: nowIso })
+        .eq("id", quote.id);
+      if (upErr) throw upErr;
+      const { error: insErr } = await supabase
+        .from("quote_approvals")
+        .insert({ quote_id: quote.id, action: "approve", approved_by: approvedBy });
+      if (insErr) throw insErr;
+      toast.success("Ponuda odobrena");
+      await fetchQuote();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Greška pri odobravanju");
+    } finally {
+      setMutating(null);
+    }
+  }
+
+  async function handleReject() {
+    if (!quote) return;
+    setMutating("reject");
+    try {
+      const nowIso = new Date().toISOString();
+      const { error: upErr } = await supabase
+        .from("quotes")
+        .update({ status: "rejected", rejected_at: nowIso })
+        .eq("id", quote.id);
+      if (upErr) throw upErr;
+      const { error: insErr } = await supabase
+        .from("quote_approvals")
+        .insert({
+          quote_id: quote.id,
+          action: "reject",
+          approved_by: approvedBy,
+          comment: rejectComment.trim() || null,
+        });
+      if (insErr) throw insErr;
+      toast.success("Ponuda odbijena");
+      setRejectOpen(false);
+      setRejectComment("");
+      await fetchQuote();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Greška pri odbijanju");
+    } finally {
+      setMutating(null);
+    }
+  }
+
 
   if (loading) {
     return (
