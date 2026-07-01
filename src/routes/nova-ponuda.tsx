@@ -119,7 +119,10 @@ function NovaPonudaPage() {
     try {
       const res = await fetch(WEBHOOK_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-penta-key": "pnt_fi_a3f81c92d6b44e07_zg26",
+        },
         body: JSON.stringify({
           source: "app_form",
           client_name: form.client_name.trim(),

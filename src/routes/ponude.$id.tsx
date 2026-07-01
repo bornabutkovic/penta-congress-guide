@@ -1,12 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Plane, BedDouble, Car, Ticket, MapPin, Calendar, Check } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Plane, BedDouble, Car, Ticket, MapPin, Calendar, Check, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { MobileFrame } from "@/components/MobileFrame";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import {
   parseRequestData,
   statusMap,
@@ -61,29 +72,88 @@ function pickNum(obj: Record<string, unknown>, keys: string[]): number | undefin
 
 function QuoteDetailPage() {
   const { id } = Route.useParams();
+  const { user } = useAuth();
+  const { profile } = useProfile();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>("flight");
+  const [mutating, setMutating] = useState<null | "approve" | "reject">(null);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectComment, setRejectComment] = useState("");
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    supabase
+  const fetchQuote = useCallback(async () => {
+    const { data, error } = await supabase
       .from("quotes")
       .select("*")
       .eq("id", id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (!active) return;
-        if (error) setError(error.message);
-        setQuote((data as unknown as Quote) ?? null);
-        setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+      .maybeSingle();
+    if (error) setError(error.message);
+    setQuote((data as unknown as Quote) ?? null);
+    setLoading(false);
   }, [id]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchQuote();
+  }, [fetchQuote]);
+
+  const approvedBy = profile?.full_name || user?.email || "agent";
+  const isAgent = profile?.role === "agent";
+
+  async function handleApprove() {
+    if (!quote) return;
+    setMutating("approve");
+    try {
+      const nowIso = new Date().toISOString();
+      const { error: upErr } = await supabase
+        .from("quotes")
+        .update({ status: "approved", approved_at: nowIso })
+        .eq("id", quote.id);
+      if (upErr) throw upErr;
+      const { error: insErr } = await supabase
+        .from("quote_approvals")
+        .insert({ quote_id: quote.id, action: "approve", approved_by: approvedBy });
+      if (insErr) throw insErr;
+      toast.success("Ponuda odobrena");
+      await fetchQuote();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Greška pri odobravanju");
+    } finally {
+      setMutating(null);
+    }
+  }
+
+  async function handleReject() {
+    if (!quote) return;
+    setMutating("reject");
+    try {
+      const nowIso = new Date().toISOString();
+      const { error: upErr } = await supabase
+        .from("quotes")
+        .update({ status: "rejected", rejected_at: nowIso })
+        .eq("id", quote.id);
+      if (upErr) throw upErr;
+      const { error: insErr } = await supabase
+        .from("quote_approvals")
+        .insert({
+          quote_id: quote.id,
+          action: "reject",
+          approved_by: approvedBy,
+          comment: rejectComment.trim() || null,
+        });
+      if (insErr) throw insErr;
+      toast.success("Ponuda odbijena");
+      setRejectOpen(false);
+      setRejectComment("");
+      await fetchQuote();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Greška pri odbijanju");
+    } finally {
+      setMutating(null);
+    }
+  }
+
 
   if (loading) {
     return (
@@ -306,7 +376,67 @@ function QuoteDetailPage() {
             </ol>
           </div>
         </div>
+
+        {isAgent && quote.status === "pending_approval" && (
+          <div className="px-5 mt-2 mb-8 space-y-2">
+            <button
+              onClick={handleApprove}
+              disabled={mutating !== null}
+              className={cn(
+                "w-full h-12 rounded-xl bg-gradient-brand text-white text-sm font-semibold shadow-elevated flex items-center justify-center gap-2 active:scale-[0.99] transition",
+                mutating !== null && "opacity-70 cursor-not-allowed",
+              )}
+            >
+              {mutating === "approve" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Odobri
+            </button>
+            <button
+              onClick={() => setRejectOpen(true)}
+              disabled={mutating !== null}
+              className={cn(
+                "w-full h-12 rounded-xl border border-destructive text-destructive text-sm font-semibold active:scale-[0.99] transition",
+                mutating !== null && "opacity-70 cursor-not-allowed",
+              )}
+            >
+              Odbij
+            </button>
+          </div>
+        )}
       </div>
+
+      <Dialog open={rejectOpen} onOpenChange={(o) => !mutating && setRejectOpen(o)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Odbij ponudu</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={rejectComment}
+            onChange={(e) => setRejectComment(e.target.value)}
+            placeholder="Razlog odbijanja (opcionalno)"
+            rows={4}
+          />
+          <DialogFooter>
+            <button
+              onClick={() => setRejectOpen(false)}
+              disabled={mutating !== null}
+              className="h-10 px-4 rounded-xl border border-border text-sm font-medium"
+            >
+              Odustani
+            </button>
+            <button
+              onClick={handleReject}
+              disabled={mutating !== null}
+              className={cn(
+                "h-10 px-4 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold flex items-center gap-2",
+                mutating !== null && "opacity-70 cursor-not-allowed",
+              )}
+            >
+              {mutating === "reject" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Odbij ponudu
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MobileFrame>
   );
 }

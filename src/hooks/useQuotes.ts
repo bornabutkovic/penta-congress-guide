@@ -60,6 +60,30 @@ export function useQuotes() {
 
   useEffect(() => {
     fetchQuotes();
+
+    const channel = supabase
+      .channel("quotes-changes")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "quotes" },
+        () => fetchQuotes(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "quotes" },
+        () => fetchQuotes(),
+      )
+      .subscribe();
+
+    const onVis = () => {
+      if (document.visibilityState === "visible") fetchQuotes();
+    };
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [fetchQuotes]);
 
   return { quotes, loading, error, refetch: fetchQuotes };
