@@ -119,6 +119,7 @@ function RootComponent() {
       <AuthGate>
         <Outlet />
       </AuthGate>
+      <Toaster />
     </QueryClientProvider>
   );
 }
