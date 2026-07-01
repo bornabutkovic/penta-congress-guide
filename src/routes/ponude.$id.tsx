@@ -376,7 +376,67 @@ function QuoteDetailPage() {
             </ol>
           </div>
         </div>
+
+        {isAgent && quote.status === "pending_approval" && (
+          <div className="px-5 mt-2 mb-8 space-y-2">
+            <button
+              onClick={handleApprove}
+              disabled={mutating !== null}
+              className={cn(
+                "w-full h-12 rounded-xl bg-gradient-brand text-white text-sm font-semibold shadow-elevated flex items-center justify-center gap-2 active:scale-[0.99] transition",
+                mutating !== null && "opacity-70 cursor-not-allowed",
+              )}
+            >
+              {mutating === "approve" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Odobri
+            </button>
+            <button
+              onClick={() => setRejectOpen(true)}
+              disabled={mutating !== null}
+              className={cn(
+                "w-full h-12 rounded-xl border border-destructive text-destructive text-sm font-semibold active:scale-[0.99] transition",
+                mutating !== null && "opacity-70 cursor-not-allowed",
+              )}
+            >
+              Odbij
+            </button>
+          </div>
+        )}
       </div>
+
+      <Dialog open={rejectOpen} onOpenChange={(o) => !mutating && setRejectOpen(o)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Odbij ponudu</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={rejectComment}
+            onChange={(e) => setRejectComment(e.target.value)}
+            placeholder="Razlog odbijanja (opcionalno)"
+            rows={4}
+          />
+          <DialogFooter>
+            <button
+              onClick={() => setRejectOpen(false)}
+              disabled={mutating !== null}
+              className="h-10 px-4 rounded-xl border border-border text-sm font-medium"
+            >
+              Odustani
+            </button>
+            <button
+              onClick={handleReject}
+              disabled={mutating !== null}
+              className={cn(
+                "h-10 px-4 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold flex items-center gap-2",
+                mutating !== null && "opacity-70 cursor-not-allowed",
+              )}
+            >
+              {mutating === "reject" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Odbij ponudu
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MobileFrame>
   );
 }
