@@ -121,10 +121,10 @@ function QuoteDetailPage() {
   }
 
   const req = parseRequestData(quote.request_data);
-  const flight = parseRequestData(quote.flight_data as unknown as string);
-  const hotel = parseRequestData(quote.hotel_data as unknown as string);
-  const transfer = parseRequestData(quote.transfer_data as unknown as string);
-  const fee = parseRequestData(quote.fee_data as unknown as string);
+  const flight = parseRequestData(quote.flight_data);
+  const hotel = parseRequestData(quote.hotel_data);
+  const transfer = parseRequestData(quote.transfer_data);
+  const fee = parseRequestData(quote.fee_data);
 
   const congressName = (req.congress_name as string) || quote.client_name || "Ponuda";
   const city = (req.city as string) || "";
