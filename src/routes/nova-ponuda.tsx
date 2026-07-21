@@ -311,7 +311,7 @@ function NovaPonudaPage() {
               {([
                 ["flight_needed", "Let"],
                 ["hotel_needed", "Hotel"],
-                ["transfer_needed", "Transfer"],
+                ["transfer_needed", "Transfer kućna adresa → aerodrom"],
               ] as const).map(([key, label]) => (
                 <label key={key} className="flex items-center gap-3 py-1.5 cursor-pointer">
                   <input
@@ -323,6 +323,28 @@ function NovaPonudaPage() {
                   <span className="text-sm font-medium">{label}</span>
                 </label>
               ))}
+              <AnimatePresence initial={false}>
+                {form.flight_needed && form.hotel_needed && (
+                  <motion.div
+                    key="destination_transfer"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="overflow-hidden"
+                  >
+                    <label className="flex items-center gap-3 py-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="h-5 w-5 rounded accent-[var(--brand-orange)]"
+                        checked={form.destination_transfer_needed}
+                        onChange={(e) => update("destination_transfer_needed", e.target.checked)}
+                      />
+                      <span className="text-sm font-medium">Transfer aerodrom → hotel (destinacija)</span>
+                    </label>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <AnimatePresence initial={false}>
