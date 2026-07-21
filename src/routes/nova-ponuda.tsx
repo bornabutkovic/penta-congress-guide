@@ -35,6 +35,7 @@ interface FormState {
   hotel_needed: boolean;
   transfer_needed: boolean;
   transfer_address: string;
+  destination_transfer_needed: boolean;
 }
 
 const initialState: FormState = {
@@ -51,6 +52,7 @@ const initialState: FormState = {
   hotel_needed: true,
   transfer_needed: true,
   transfer_address: "",
+  destination_transfer_needed: true,
 };
 
 type Errors = Partial<Record<keyof FormState, string>>;
@@ -138,6 +140,8 @@ function NovaPonudaPage() {
           hotel_needed: form.hotel_needed,
           transfer_needed: form.transfer_needed,
           transfer_address: form.transfer_needed ? form.transfer_address.trim() : null,
+          destination_transfer_needed:
+            form.flight_needed && form.hotel_needed ? form.destination_transfer_needed : false,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
