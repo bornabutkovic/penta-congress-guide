@@ -35,6 +35,7 @@ export interface Quote {
   transfer_data: string | null;
   fee_data: string | null;
   created_at: string;
+  approval_token: string | null;
 }
 
 export function useQuotes() {
