@@ -105,16 +105,10 @@ function QuoteDetailPage() {
     if (!quote) return;
     setMutating("approve");
     try {
-      const nowIso = new Date().toISOString();
-      const { error: upErr } = await supabase
-        .from("quotes")
-        .update({ status: "approved", approved_at: nowIso })
-        .eq("id", quote.id);
-      if (upErr) throw upErr;
-      const { error: insErr } = await supabase
-        .from("quote_approvals")
-        .insert({ quote_id: quote.id, action: "approve", approved_by: approvedBy });
-      if (insErr) throw insErr;
+      const res = await fetch(
+        `https://penta.app.n8n.cloud/webhook/approve?token=${encodeURIComponent(quote.approval_token ?? "")}&approved_by=${encodeURIComponent(approvedBy)}`,
+      );
+      if (!res.ok) throw new Error("Odobrenje nije uspjelo (HTTP " + res.status + ")");
       toast.success("Ponuda odobrena");
       await fetchQuote();
     } catch (e) {
@@ -128,21 +122,16 @@ function QuoteDetailPage() {
     if (!quote) return;
     setMutating("reject");
     try {
-      const nowIso = new Date().toISOString();
-      const { error: upErr } = await supabase
-        .from("quotes")
-        .update({ status: "rejected", rejected_at: nowIso })
-        .eq("id", quote.id);
-      if (upErr) throw upErr;
-      const { error: insErr } = await supabase
-        .from("quote_approvals")
-        .insert({
-          quote_id: quote.id,
-          action: "reject",
+      const res = await fetch("https://penta.app.n8n.cloud/webhook/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: quote.approval_token,
+          comment: rejectComment.trim() || undefined,
           approved_by: approvedBy,
-          comment: rejectComment.trim() || null,
-        });
-      if (insErr) throw insErr;
+        }),
+      });
+      if (!res.ok) throw new Error("Odbijanje nije uspjelo (HTTP " + res.status + ")");
       toast.success("Ponuda odbijena");
       setRejectOpen(false);
       setRejectComment("");
