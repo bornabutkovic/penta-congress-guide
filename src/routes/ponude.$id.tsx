@@ -28,17 +28,17 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/ponude/$id")({
-  head: () => ({
+  head: ({ params }) => ({
     meta: [
       { title: "Detalji ponude — PICCARD³" },
       { name: "description", content: "Detalji ponude." },
       { property: "og:title", content: "Detalji ponude — PICCARD³" },
       { property: "og:description", content: "Detalji ponude za kongresno putovanje." },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://penta-travel.lovable.app/ponude" },
+      { property: "og:url", content: `https://penta-travel.lovable.app/ponude/${params.id}` },
       { name: "twitter:card", content: "summary" },
     ],
-    links: [{ rel: "canonical", href: "https://penta-travel.lovable.app/ponude" }],
+    links: [{ rel: "canonical", href: `https://penta-travel.lovable.app/ponude/${params.id}` }],
   }),
   component: QuoteDetailPage,
 });

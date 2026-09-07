@@ -27,7 +27,7 @@ export function BottomNav() {
                 <span
                   className={cn(
                     "flex h-9 w-9 items-center justify-center rounded-2xl transition-all",
-                    active ? "bg-gradient-brand text-white shadow-elevated" : "text-muted-foreground",
+                    active ? "bg-gradient-brand text-primary-foreground shadow-elevated" : "text-muted-foreground",
                   )}
                 >
                   <Icon className="h-[18px] w-[18px]" strokeWidth={2.2} />

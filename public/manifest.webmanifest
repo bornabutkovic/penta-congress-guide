@@ -1,7 +1,7 @@
 {
   "name": "PICCARD³ — Plan. Book. Go.",
   "short_name": "PICCARD³",
-  "description": "Vaš asistent za medicinske kongrese i poslovna putovanja.",
+  "description": "PICCARD³ asistent za medicinske kongrese i poslovna putovanja.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

@@ -98,7 +98,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2 {
+  h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
   }
 }
@@ -106,6 +106,9 @@
 @utility bg-gradient-brand {
   background-color: var(--brand-navy);
   &:hover {
+    background-color: var(--brand-navy-dark);
+  }
+  &:active {
     background-color: var(--brand-navy-dark);
   }
 }
