@@ -8,9 +8,9 @@ import { Wordmark } from "@/components/Wordmark";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Prijava — PICCARD³" },
+      { title: "Prijava | PICCARD³" },
       { name: "description", content: "Prijavite se u PICCARD³, vašeg asistenta za kongresna putovanja." },
-      { property: "og:title", content: "Prijava — PICCARD³" },
+      { property: "og:title", content: "Prijava | PICCARD³" },
       { property: "og:description", content: "Prijavite se u PICCARD³, vašeg asistenta za kongresna putovanja." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://penta-travel.lovable.app/" },

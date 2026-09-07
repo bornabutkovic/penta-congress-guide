@@ -10,9 +10,9 @@ import { Wordmark } from "@/components/Wordmark";
 export const Route = createFileRoute("/chat")({
   head: () => ({
     meta: [
-      { title: "Chat — PICCARD³" },
+      { title: "Chat | PICCARD³" },
       { name: "description", content: "Kontaktirajte PICCARD³ tim za kongresna putovanja." },
-      { property: "og:title", content: "Chat — PICCARD³" },
+      { property: "og:title", content: "Chat | PICCARD³" },
       { property: "og:description", content: "Kontaktirajte PICCARD³ tim za kongresna putovanja." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://penta-travel.lovable.app/chat" },

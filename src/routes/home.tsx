@@ -22,9 +22,9 @@ const statusMap: Record<QuoteDbStatus, QuoteStatus> = {
 export const Route = createFileRoute("/home")({
   head: () => ({
     meta: [
-      { title: "Početna — PICCARD³" },
+      { title: "Početna | PICCARD³" },
       { name: "description", content: "Pregled ponuda i brze akcije." },
-      { property: "og:title", content: "Početna — PICCARD³" },
+      { property: "og:title", content: "Početna | PICCARD³" },
       { property: "og:description", content: "Pregled ponuda i brzih akcija za kongresna putovanja." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://penta-travel.lovable.app/home" },

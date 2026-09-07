@@ -14,9 +14,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/ponude")({
   head: () => ({
     meta: [
-      { title: "Moje ponude — PICCARD³" },
+      { title: "Moje ponude | PICCARD³" },
       { name: "description", content: "Pregled svih kongresnih ponuda." },
-      { property: "og:title", content: "Moje ponude — PICCARD³" },
+      { property: "og:title", content: "Moje ponude | PICCARD³" },
       { property: "og:description", content: "Pregled svih kongresnih ponuda." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://penta-travel.lovable.app/ponude" },
