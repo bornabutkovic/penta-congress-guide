@@ -1,12 +1,12 @@
 {
-  "name": "Penta — Kongresni asistent",
-  "short_name": "Penta",
-  "description": "Vaš asistent za medicinske kongrese i poslovna putovanja.",
+  "name": "PICCARD³ — Plan. Book. Go.",
+  "short_name": "PICCARD³",
+  "description": "PICCARD³ asistent za medicinske kongrese i poslovna putovanja.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#FFFFFF",
-  "theme_color": "#F5871F",
+  "background_color": "#F7F9FC",
+  "theme_color": "#0A2A53",
   "lang": "hr",
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },

@@ -1,0 +1,18 @@
+src/styles.css:67:  --brand-orange: #F5871F;
+src/styles.css:68:  --brand-red: #EE4052;
+src/styles.css:69:  --status-pending: #F5871F;
+src/styles.css:70:  --status-approved: #16A34A;
+src/styles.css:71:  --status-sent: #2563EB;
+src/styles.css:72:  --status-rejected: #EE4052;
+src/styles.css:74:  --gradient-brand: linear-gradient(135deg, #F5871F 0%, #EE4052 100%);
+src/styles.css:76:  --gradient-bg: linear-gradient(180deg, #FFF7EE 0%, #FFFFFF 60%);
+src/routes/__root.tsx:73:      { name: "theme-color", content: "#F5871F" },
+src/lib/error-page.ts:9:      body { font: 15px/1.5 system-ui, -apple-system, sans-serif; background: #fafafa; color: #111; display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
+src/lib/error-page.ts:12:      p { color: #4b5563; margin: 0 0 1.5rem; }
+src/lib/error-page.ts:15:      .primary { background: #111; color: #fff; }
+src/lib/error-page.ts:16:      .secondary { background: #fff; color: #111; border-color: #d1d5db; }
+src/routes/chat.tsx:79:                      : "max-w-[78%] rounded-2xl rounded-bl-md bg-[#F1F5F9] px-4 py-2.5 text-sm text-foreground"
+src/components/ui/chart.tsx:51:          "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
+src/styles.css:75:  --gradient-brand-soft: linear-gradient(135deg, rgba(245,135,31,0.08) 0%, rgba(238,64,82,0.08) 100%);
+src/styles.css:77:  --shadow-card: 0 2px 12px rgba(15, 23, 42, 0.06);
+src/styles.css:78:  --shadow-elevated: 0 12px 32px -8px rgba(245, 135, 31, 0.35);

@@ -19,15 +19,15 @@ function NotFoundComponent() {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-gradient-brand">404</h1>
-        <h2 className="mt-4 text-xl font-semibold">Stranica nije pronađena</h2>
+        <h1 className="font-display text-7xl font-bold text-gradient-brand">404</h1>
+        <h2 className="font-display mt-4 text-xl font-semibold">Stranica nije pronađena</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Stranica koju tražite ne postoji ili je premještena.
         </p>
         <div className="mt-6">
           <Link
             to="/home"
-            className="inline-flex items-center justify-center rounded-2xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-white shadow-elevated"
+            className="inline-flex items-center justify-center rounded-2xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-elevated"
           >
             Na početnu
           </Link>
@@ -43,14 +43,14 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold">Nešto nije u redu</h1>
+        <h1 className="font-display text-xl font-semibold">Nešto nije u redu</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Pokušajte ponovno ili se vratite na početnu.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => { router.invalidate(); reset(); }}
-            className="rounded-2xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-white"
+            className="rounded-2xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-primary-foreground"
           >
             Pokušaj ponovno
           </button>
@@ -68,16 +68,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Penta — Vaš kongresni asistent" },
-      { name: "description", content: "Penta — asistent za medicinske kongrese i poslovna putovanja." },
-      { name: "theme-color", content: "#F5871F" },
+      { title: "PICCARD³ — Plan. Book. Go." },
+      { name: "description", content: "PICCARD³ — asistent za medicinske kongrese i poslovna putovanja." },
+      { name: "theme-color", content: "#0A2A53" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
-      { name: "apple-mobile-web-app-title", content: "Penta" },
+      { name: "apple-mobile-web-app-title", content: "PICCARD³" },
       { name: "mobile-web-app-capable", content: "yes" },
-      { property: "og:title", content: "Penta — Vaš kongresni asistent" },
-      { property: "og:description", content: "Vaš asistent za medicinske kongrese." },
+      { property: "og:title", content: "PICCARD³" },
+      { property: "og:description", content: "Vaš asistent za medicinske kongrese i poslovna putovanja." },
       { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -88,7 +89,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap",
       },
     ],
   }),

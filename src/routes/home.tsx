@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useQuotes, parseRequestData, type QuoteDbStatus } from "@/hooks/useQuotes";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Wordmark } from "@/components/Wordmark";
 
 const statusMap: Record<QuoteDbStatus, QuoteStatus> = {
   draft: "pending",
@@ -18,14 +19,18 @@ const statusMap: Record<QuoteDbStatus, QuoteStatus> = {
   rejected: "rejected",
   error: "rejected",
 };
-import logo from "@/assets/penta-logo.webp";
-
 export const Route = createFileRoute("/home")({
   head: () => ({
     meta: [
-      { title: "Penta — Početna" },
+      { title: "Početna — PICCARD³" },
       { name: "description", content: "Pregled ponuda i brze akcije." },
+      { property: "og:title", content: "Početna — PICCARD³" },
+      { property: "og:description", content: "Pregled ponuda i brzih akcija za kongresna putovanja." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://penta-travel.lovable.app/home" },
+      { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "https://penta-travel.lovable.app/home" }],
   }),
   component: HomePage,
 });
@@ -54,20 +59,17 @@ function HomePage() {
         <header className="bg-gradient-bg px-5 pt-6 pb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-white shadow-card flex items-center justify-center overflow-hidden">
-                <img src={logo} alt="Penta" className="h-6 w-auto" />
-              </div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Penta</div>
+              <Wordmark className="text-base" />
             </div>
             <div className="flex items-center gap-2">
-              <button className="relative h-10 w-10 rounded-full bg-white shadow-card flex items-center justify-center">
+              <button className="relative h-10 w-10 rounded-full bg-card shadow-card flex items-center justify-center">
                 <Bell className="h-4 w-4" />
                 <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-gradient-brand" />
               </button>
               <button
                 onClick={handleLogout}
                 aria-label="Odjava"
-                className="h-10 w-10 rounded-full bg-white shadow-card flex items-center justify-center"
+                className="h-10 w-10 rounded-full bg-card shadow-card flex items-center justify-center"
               >
                 <LogOut className="h-4 w-4" />
               </button>
@@ -75,7 +77,7 @@ function HomePage() {
           </div>
 
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
-            <h1 className="text-[26px] font-bold leading-tight">{"Dobrodošli, " + (profile?.full_name?.split(" ")[0] ?? "...") + "! 👋"}</h1>
+            <h1 className="font-display text-[26px] font-bold leading-tight">{"Dobrodošli, " + (profile?.full_name?.split(" ")[0] ?? "...") + "! 👋"}</h1>
             <p className="mt-1 text-sm text-muted-foreground">Spreman za sljedeći kongres?</p>
           </motion.div>
         </header>
@@ -93,7 +95,7 @@ function HomePage() {
                   to={to}
                   className="block h-full rounded-2xl bg-card p-3 shadow-card transition active:scale-[0.97]"
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-elevated">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-brand text-primary-foreground shadow-elevated">
                     <Icon className="h-5 w-5" strokeWidth={2.2} />
                   </span>
                   <p className="mt-3 text-[13px] font-semibold leading-tight">{title}</p>
@@ -106,7 +108,7 @@ function HomePage() {
 
         <section className="px-5 mt-8">
           <div className="flex items-end justify-between">
-            <h2 className="text-base font-semibold">Nedavne ponude</h2>
+            <h2 className="font-display text-base font-semibold">Nedavne ponude</h2>
             <Link to="/ponude" className="text-sm font-semibold text-gradient-brand">Vidi sve</Link>
           </div>
 
@@ -147,7 +149,7 @@ function HomePage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold text-gradient-brand">
+                      <p className="font-display text-sm font-bold text-gradient-brand">
                         {q.total_price ? formatEur(q.total_price) : "Na upit"}
                       </p>
                       <ChevronRight className="ml-auto mt-1 h-4 w-4 text-muted-foreground" />

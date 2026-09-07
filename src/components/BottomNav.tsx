@@ -27,12 +27,12 @@ export function BottomNav() {
                 <span
                   className={cn(
                     "flex h-9 w-9 items-center justify-center rounded-2xl transition-all",
-                    active ? "bg-gradient-brand text-white shadow-elevated" : "text-muted-foreground",
+                    active ? "bg-gradient-brand text-primary-foreground shadow-elevated" : "text-muted-foreground",
                   )}
                 >
                   <Icon className="h-[18px] w-[18px]" strokeWidth={2.2} />
                 </span>
-                <span className={cn(active ? "text-gradient-brand font-semibold" : "text-muted-foreground")}>
+                <span className={cn(active ? "font-display font-semibold text-gradient-brand" : "text-muted-foreground")}>
                   {label}
                 </span>
               </Link>

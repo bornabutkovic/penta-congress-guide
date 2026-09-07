@@ -10,9 +10,15 @@ import { PageHeader } from "@/components/PageHeader";
 export const Route = createFileRoute("/voice")({
   head: () => ({
     meta: [
-      { title: "Penta — Glasovni agent" },
-      { name: "description", content: "Razgovarajte s Penta agentom glasom." },
+      { title: "Glasovni agent — PICCARD³" },
+      { name: "description", content: "Razgovarajte glasom s PICCARD³ agentom za kongresna putovanja." },
+      { property: "og:title", content: "Glasovni agent — PICCARD³" },
+      { property: "og:description", content: "Razgovarajte glasom s PICCARD³ agentom za kongresna putovanja." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://penta-travel.lovable.app/voice" },
+      { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "https://penta-travel.lovable.app/voice" }],
   }),
   component: VoicePage,
 });
@@ -123,7 +129,7 @@ function VoicePage() {
 
       <div className="flex flex-1 flex-col items-center justify-between px-6 py-8 bg-gradient-bg">
         <div className="text-center">
-          <h2 className="text-xl font-bold">Razgovarajte s agentom</h2>
+          <h2 className="font-display text-xl font-bold">Razgovarajte s agentom</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {state === "idle" ? "Dodirnite mikrofon" : state === "listening" ? "Slušam..." : "Agent govori..."}
           </p>
@@ -147,13 +153,13 @@ function VoicePage() {
             animate={{ scale: state === "speaking" ? [1, 1.04, 1] : 1 }}
             transition={{ duration: 0.9, repeat: state === "speaking" ? Infinity : 0 }}
           >
-            <div className="absolute inset-3 rounded-full bg-gradient-to-br from-white/40 to-transparent" />
-            <div className="absolute top-8 left-10 h-12 w-12 rounded-full bg-white/30 blur-md" />
+            <div className="absolute inset-3 rounded-full border border-primary-foreground/25" />
+            <div className="absolute top-8 left-10 h-12 w-12 rounded-full bg-primary-foreground/20 blur-md" />
           </motion.div>
         </div>
 
         <div className="w-full">
-          <div className="min-h-[64px] rounded-2xl bg-white px-5 py-4 text-center text-sm text-muted-foreground shadow-card">
+          <div className="min-h-[64px] rounded-2xl bg-card px-5 py-4 text-center text-sm text-muted-foreground shadow-card">
             <AnimatePresence mode="wait">
               <motion.p
                 key={transcript}
@@ -171,7 +177,7 @@ function VoicePage() {
             <div className="mt-6 flex items-center justify-center gap-5">
               <button
                 onClick={toggleMute}
-                className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-card transition active:scale-95"
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-card shadow-card transition active:scale-95"
                 aria-label={muted ? "Uključi mikrofon" : "Utišaj"}
               >
                 {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
@@ -179,7 +185,7 @@ function VoicePage() {
 
               <button
                 onClick={onPhoneButton}
-                className="flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--brand-red)] text-white shadow-elevated transition active:scale-95"
+                className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-elevated transition active:scale-95"
                 aria-label="Prekini"
               >
                 <PhoneOff className="h-6 w-6" />
@@ -187,7 +193,7 @@ function VoicePage() {
 
               <Link
                 to="/chat"
-                className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-card transition active:scale-95"
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-card shadow-card transition active:scale-95"
                 aria-label="Chat"
               >
                 <Keyboard className="h-5 w-5" />

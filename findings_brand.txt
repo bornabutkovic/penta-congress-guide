@@ -1,0 +1,54 @@
+src/styles.css:34:  --color-brand-orange: var(--brand-orange);
+src/styles.css:35:  --color-brand-red: var(--brand-red);
+src/styles.css:67:  --brand-orange: #F5871F;
+src/styles.css:68:  --brand-red: #EE4052;
+src/styles.css:74:  --gradient-brand: linear-gradient(135deg, #F5871F 0%, #EE4052 100%);
+src/styles.css:75:  --gradient-brand-soft: linear-gradient(135deg, rgba(245,135,31,0.08) 0%, rgba(238,64,82,0.08) 100%);
+src/styles.css:98:@utility bg-gradient-brand {
+src/styles.css:99:  background-image: var(--gradient-brand);
+src/styles.css:101:@utility bg-gradient-brand-soft {
+src/styles.css:102:  background-image: var(--gradient-brand-soft);
+src/styles.css:107:@utility text-gradient-brand {
+src/styles.css:108:  background-image: var(--gradient-brand);
+src/styles.css:119:@utility border-gradient-brand {
+src/styles.css:123:    var(--gradient-brand);
+src/routes/voice.tsx:139:              <span className="absolute inset-0 rounded-full bg-gradient-brand opacity-20 blur-2xl" style={{ animation: "orb-pulse 2.4s ease-in-out infinite" }} />
+src/routes/voice.tsx:140:              <span className="absolute inset-6 rounded-full bg-gradient-brand opacity-30" style={{ animation: "orb-ripple 2.2s ease-out infinite" }} />
+src/routes/voice.tsx:141:              <span className="absolute inset-10 rounded-full bg-gradient-brand opacity-25" style={{ animation: "orb-ripple 2.2s ease-out infinite 0.7s" }} />
+src/routes/voice.tsx:145:            className={`relative rounded-full bg-gradient-brand shadow-elevated ${state === "idle" ? "h-56 w-56" : "h-48 w-48"}`}
+src/routes/voice.tsx:182:                className="flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--brand-red)] text-white shadow-elevated transition active:scale-95"
+src/routes/voice.tsx:205:            <Link to="/chat" className="text-sm font-semibold text-gradient-brand">
+src/routes/home.tsx:65:                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-gradient-brand" />
+src/routes/home.tsx:96:                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-elevated">
+src/routes/home.tsx:110:            <Link to="/ponude" className="text-sm font-semibold text-gradient-brand">Vidi sve</Link>
+src/routes/home.tsx:140:                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-brand-soft">
+src/routes/home.tsx:141:                      <span className="text-sm font-bold text-gradient-brand">{initials}</span>
+src/routes/home.tsx:150:                      <p className="text-sm font-bold text-gradient-brand">
+src/routes/nova-ponuda.tsx:169:            <div className="mx-auto h-16 w-16 rounded-full bg-gradient-brand-soft flex items-center justify-center">
+src/routes/nova-ponuda.tsx:170:              <CheckCircle2 className="h-10 w-10 text-gradient-brand" style={{ color: "var(--brand-orange)" }} />
+src/routes/nova-ponuda.tsx:319:                    className="h-5 w-5 rounded accent-[var(--brand-orange)]"
+src/routes/nova-ponuda.tsx:339:                        className="h-5 w-5 rounded accent-[var(--brand-orange)]"
+src/routes/nova-ponuda.tsx:380:                "mt-6 mb-2 w-full h-12 rounded-xl bg-gradient-brand text-white text-sm font-semibold shadow-elevated transition active:scale-[0.99] flex items-center justify-center gap-2",
+src/routes/ponude.$id.tsx:285:          <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-brand" />
+src/routes/ponude.$id.tsx:305:            <p className="mt-1 text-3xl font-extrabold text-gradient-brand">
+src/routes/ponude.$id.tsx:321:                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-brand-soft text-gradient-brand">
+src/routes/ponude.$id.tsx:354:                      done ? "bg-gradient-brand text-white shadow-elevated" : "bg-secondary text-muted-foreground",
+src/routes/ponude.$id.tsx:361:                    {current && <span className="ml-auto text-[10px] font-semibold text-gradient-brand uppercase tracking-wider">Trenutno</span>}
+src/routes/ponude.$id.tsx:375:                "w-full h-12 rounded-xl bg-gradient-brand text-white text-sm font-semibold shadow-elevated flex items-center justify-center gap-2 active:scale-[0.99] transition",
+src/routes/ponude.tsx:64:                <span className={active ? "text-gradient-brand" : "text-muted-foreground"}>{label}</span>
+src/routes/ponude.tsx:68:                    className="absolute inset-x-2 bottom-0 h-[3px] rounded-full bg-gradient-brand"
+src/routes/ponude.tsx:136:                  <p className="text-base font-bold text-gradient-brand">
+src/routes/chat.tsx:78:                      ? "max-w-[78%] rounded-2xl rounded-br-md bg-gradient-brand px-4 py-2.5 text-sm text-white shadow-card"
+src/routes/chat.tsx:94:                  className="whitespace-nowrap rounded-full border-gradient-brand px-3.5 py-1.5 text-xs font-semibold text-gradient-brand"
+src/routes/chat.tsx:111:                <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-white shadow-elevated">
+src/routes/chat.tsx:115:                <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-white shadow-elevated">
+src/routes/chat.tsx:135:          className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-brand px-8 py-3 text-sm font-semibold text-white shadow-elevated active:opacity-90"
+src/routes/__root.tsx:22:        <h1 className="text-7xl font-bold text-gradient-brand">404</h1>
+src/routes/__root.tsx:30:            className="inline-flex items-center justify-center rounded-2xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-white shadow-elevated"
+src/routes/__root.tsx:53:            className="rounded-2xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-white"
+src/components/PageHeader.tsx:19:          <Link to="/home" className="text-sm font-semibold text-gradient-brand">Penta</Link>
+src/routes/index.tsx:75:              className="h-12 rounded-2xl border border-border bg-white px-4 text-sm shadow-card focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-orange)]/40"
+src/routes/index.tsx:87:              className="h-12 rounded-2xl border border-border bg-white px-4 text-sm shadow-card focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-orange)]/40"
+src/routes/index.tsx:95:            className="mt-2 h-13 rounded-2xl bg-gradient-brand py-3.5 text-base font-semibold text-white shadow-elevated transition active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
+src/components/BottomNav.tsx:30:                    active ? "bg-gradient-brand text-white shadow-elevated" : "text-muted-foreground",
+src/components/BottomNav.tsx:35:                <span className={cn(active ? "text-gradient-brand font-semibold" : "text-muted-foreground")}>
