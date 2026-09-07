@@ -10,9 +10,9 @@ import { PageHeader } from "@/components/PageHeader";
 export const Route = createFileRoute("/voice")({
   head: () => ({
     meta: [
-      { title: "Glasovni agent — PICCARD³" },
+      { title: "Glasovni agent | PICCARD³" },
       { name: "description", content: "Razgovarajte glasom s PICCARD³ agentom za kongresna putovanja." },
-      { property: "og:title", content: "Glasovni agent — PICCARD³" },
+      { property: "og:title", content: "Glasovni agent | PICCARD³" },
       { property: "og:description", content: "Razgovarajte glasom s PICCARD³ agentom za kongresna putovanja." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://penta-travel.lovable.app/voice" },
