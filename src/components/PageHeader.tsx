@@ -7,7 +7,7 @@ export function PageHeader({ title, back = true, right }: { title: string; back?
   const router = useRouter();
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-border bg-background/90 px-4 py-3 backdrop-blur-md">
-      <div className="flex w-10 justify-start">
+      <div className="flex w-20 justify-start">
         {back ? (
           <button
             onClick={() => router.history.back()}
@@ -23,7 +23,7 @@ export function PageHeader({ title, back = true, right }: { title: string; back?
         )}
       </div>
       <h1 className="font-display text-base font-semibold">{title}</h1>
-      <div className="flex w-10 justify-end">{right}</div>
+      <div className="flex w-20 justify-end">{right}</div>
     </header>
   );
 }

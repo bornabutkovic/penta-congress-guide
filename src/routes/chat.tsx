@@ -5,14 +5,20 @@ import { useState, useRef, useEffect } from "react";
 import { MobileFrame } from "@/components/MobileFrame";
 import { BottomNav } from "@/components/BottomNav";
 import { PageHeader } from "@/components/PageHeader";
-import logo from "@/assets/penta-logo.webp";
+import { Wordmark } from "@/components/Wordmark";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
     meta: [
-      { title: "Penta — Chat" },
-      { name: "description", content: "Pišite s Penta agentom." },
+      { title: "Chat — PICCARD³" },
+      { name: "description", content: "Kontaktirajte PICCARD³ tim za kongresna putovanja." },
+      { property: "og:title", content: "Chat — PICCARD³" },
+      { property: "og:description", content: "Kontaktirajte PICCARD³ tim za kongresna putovanja." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://penta-travel.lovable.app/chat" },
+      { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "https://penta-travel.lovable.app/chat" }],
   }),
   component: ChatPage,
 });
@@ -20,7 +26,7 @@ export const Route = createFileRoute("/chat")({
 interface Msg { id: number; role: "user" | "agent"; text: string }
 
 const initialMessages: Msg[] = [
-  { id: 1, role: "agent", text: "Bok! Ja sam vaš Penta asistent. Kako vam mogu pomoći danas?" },
+  { id: 1, role: "agent", text: "Bok! Ja sam vaš PICCARD³ asistent. Kako vam mogu pomoći danas?" },
   { id: 2, role: "user", text: "Trebam ponudu za ESC Congress u Amsterdamu." },
   { id: 3, role: "agent", text: "Naravno! Polazak iz Zagreba, 27.08. – 02.09.? Mogu pripremiti opcije za let, hotel i transfer." },
 ];
@@ -52,7 +58,7 @@ function ChatPage() {
   return (
     <MobileFrame>
       <PageHeader
-        title="Penta agent"
+        title="PICCARD³ agent"
         back={false}
         right={<span className="inline-flex h-2 w-2 rounded-full bg-[color:var(--status-approved)]" aria-label="online" />}
       />
@@ -68,15 +74,15 @@ function ChatPage() {
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}
               >
                 {m.role === "agent" && (
-                  <div className="h-7 w-7 shrink-0 rounded-full bg-white shadow-card flex items-center justify-center overflow-hidden">
-                    <img src={logo} alt="" className="h-4 w-auto" />
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-card shadow-card">
+                    <Wordmark className="text-[7px]" />
                   </div>
                 )}
                 <div
                   className={
                     m.role === "user"
-                      ? "max-w-[78%] rounded-2xl rounded-br-md bg-gradient-brand px-4 py-2.5 text-sm text-white shadow-card"
-                      : "max-w-[78%] rounded-2xl rounded-bl-md bg-[#F1F5F9] px-4 py-2.5 text-sm text-foreground"
+                      ? "max-w-[78%] rounded-2xl rounded-br-md bg-gradient-brand px-4 py-2.5 text-sm text-primary-foreground shadow-card"
+                      : "max-w-[78%] rounded-2xl rounded-bl-md bg-secondary px-4 py-2.5 text-sm text-foreground"
                   }
                 >
                   {m.text}
@@ -108,11 +114,11 @@ function ChatPage() {
                 className="flex-1 bg-transparent px-3 text-sm focus:outline-none"
               />
               {input.trim() ? (
-                <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-white shadow-elevated">
+                <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-primary-foreground shadow-elevated">
                   <Send className="h-4 w-4" />
                 </button>
               ) : (
-                <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-white shadow-elevated">
+                <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-primary-foreground shadow-elevated">
                   <Mic className="h-4 w-4" />
                 </button>
               )}
@@ -132,7 +138,7 @@ function ChatPage() {
           href="https://wa.me/385916059712"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-brand px-8 py-3 text-sm font-semibold text-white shadow-elevated active:opacity-90"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-brand px-8 py-3 text-sm font-semibold text-primary-foreground shadow-elevated active:opacity-90"
         >
           Otvori WhatsApp
         </a>
