@@ -32,7 +32,7 @@ export function BottomNav() {
                 >
                   <Icon className="h-[18px] w-[18px]" strokeWidth={2.2} />
                 </span>
-                <span className={cn(active ? "text-gradient-brand font-semibold" : "text-muted-foreground")}>
+                <span className={cn(active ? "font-display font-semibold text-gradient-brand" : "text-muted-foreground")}>
                   {label}
                 </span>
               </Link>
