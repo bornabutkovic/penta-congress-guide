@@ -14,9 +14,15 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/ponude")({
   head: () => ({
     meta: [
-      { title: "Penta — Moje ponude" },
+      { title: "Moje ponude — PICCARD³" },
       { name: "description", content: "Pregled svih kongresnih ponuda." },
+      { property: "og:title", content: "Moje ponude — PICCARD³" },
+      { property: "og:description", content: "Pregled svih kongresnih ponuda." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://penta-travel.lovable.app/ponude" },
+      { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "https://penta-travel.lovable.app/ponude" }],
   }),
   component: PonudePage,
 });
@@ -133,7 +139,7 @@ function PonudePage() {
                 </div>
                 <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
                   <StatusBadge status={statusMap[q.status] ?? "pending"} />
-                  <p className="text-base font-bold text-gradient-brand">
+                  <p className="font-display text-base font-bold text-gradient-brand">
                     {q.total_price ? formatEur(q.total_price) : "Na upit"}
                   </p>
                 </div>

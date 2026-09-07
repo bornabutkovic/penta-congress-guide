@@ -10,9 +10,15 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/nova-ponuda")({
   head: () => ({
     meta: [
-      { title: "Penta — Nova ponuda" },
+      { title: "Nova ponuda — PICCARD³" },
       { name: "description", content: "Kreiraj novu kongresnu ponudu." },
+      { property: "og:title", content: "Nova ponuda — PICCARD³" },
+      { property: "og:description", content: "Kreirajte novu ponudu za kongresno putovanje." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://penta-travel.lovable.app/nova-ponuda" },
+      { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "https://penta-travel.lovable.app/nova-ponuda" }],
   }),
   component: NovaPonudaPage,
 });
@@ -59,7 +65,7 @@ type Errors = Partial<Record<keyof FormState, string>>;
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mt-6 mb-2">
+    <h2 className="font-display text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mt-6 mb-2">
       {children}
     </h2>
   );
@@ -167,9 +173,9 @@ function NovaPonudaPage() {
         {success ? (
           <div className="mt-8 rounded-2xl bg-card p-6 shadow-card text-center">
             <div className="mx-auto h-16 w-16 rounded-full bg-gradient-brand-soft flex items-center justify-center">
-              <CheckCircle2 className="h-10 w-10 text-gradient-brand" style={{ color: "var(--brand-orange)" }} />
+              <CheckCircle2 className="h-10 w-10 text-primary" />
             </div>
-            <h2 className="mt-4 text-lg font-bold">Zahtjev je primljen!</h2>
+            <h2 className="font-display mt-4 text-lg font-bold">Zahtjev je primljen!</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Ponuda će biti pripremljena i poslana na {success}
             </p>
@@ -316,7 +322,7 @@ function NovaPonudaPage() {
                 <label key={key} className="flex items-center gap-3 py-1.5 cursor-pointer">
                   <input
                     type="checkbox"
-                    className="h-5 w-5 rounded accent-[var(--brand-orange)]"
+                    className="h-5 w-5 rounded accent-primary"
                     checked={form[key]}
                     onChange={(e) => update(key, e.target.checked)}
                   />
@@ -336,7 +342,7 @@ function NovaPonudaPage() {
                     <label className="flex items-center gap-3 py-1.5 cursor-pointer">
                       <input
                         type="checkbox"
-                        className="h-5 w-5 rounded accent-[var(--brand-orange)]"
+                        className="h-5 w-5 rounded accent-primary"
                         checked={form.destination_transfer_needed}
                         onChange={(e) => update("destination_transfer_needed", e.target.checked)}
                       />
@@ -377,7 +383,7 @@ function NovaPonudaPage() {
               type="submit"
               disabled={submitting}
               className={cn(
-                "mt-6 mb-2 w-full h-12 rounded-xl bg-gradient-brand text-white text-sm font-semibold shadow-elevated transition active:scale-[0.99] flex items-center justify-center gap-2",
+                "mt-6 mb-2 w-full h-12 rounded-xl bg-gradient-brand text-primary-foreground text-sm font-semibold shadow-elevated transition active:scale-[0.99] flex items-center justify-center gap-2",
                 submitting && "opacity-70 cursor-not-allowed",
               )}
             >
