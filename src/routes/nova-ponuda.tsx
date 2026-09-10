@@ -31,7 +31,9 @@ interface FormState {
   client_name: string;
   client_email: string;
   client_phone: string;
+  congress_needed: boolean;
   congress: string;
+  destination_city: string;
   origin_city: string;
   pax_count: number;
   cabin_class: CabinClass;
@@ -48,7 +50,9 @@ const initialState: FormState = {
   client_name: "",
   client_email: "",
   client_phone: "",
+  congress_needed: true,
   congress: "",
+  destination_city: "",
   origin_city: "",
   pax_count: 1,
   cabin_class: "economy",
