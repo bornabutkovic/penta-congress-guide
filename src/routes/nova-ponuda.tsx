@@ -114,8 +114,12 @@ function NovaPonudaPage() {
     if (!form.client_email.trim()) e.client_email = "Obavezno polje";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.client_email)) e.client_email = "Neispravan email";
     if (!form.client_phone.trim()) e.client_phone = "Obavezno polje";
-    if (!form.congress.trim()) e.congress = "Obavezno polje";
-    if (!form.origin_city.trim()) e.origin_city = "Obavezno polje";
+    if (form.congress_needed) {
+      if (!form.congress.trim()) e.congress = "Obavezno polje";
+    } else if (!form.destination_city.trim()) {
+      e.destination_city = "Obavezno polje";
+    }
+    if (form.flight_needed && !form.origin_city.trim()) e.origin_city = "Obavezno polje";
     if (!form.pax_count || form.pax_count < 1 || form.pax_count > 20) e.pax_count = "Broj putnika 1-20";
     if (!form.checkin) e.checkin = "Obavezno polje";
     if (!form.checkout) e.checkout = "Obavezno polje";
