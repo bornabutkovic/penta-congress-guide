@@ -245,32 +245,147 @@ function NovaPonudaPage() {
               </div>
             </div>
 
-            <SectionLabel>Kongres</SectionLabel>
+            <SectionLabel>Usluge</SectionLabel>
+            <div className="space-y-2 rounded-2xl bg-card p-4 shadow-card">
+              {([
+                ["congress_needed", "Kongres"],
+                ["flight_needed", "Let"],
+                ["hotel_needed", "Hotel"],
+              ] as const).map(([key, label]) => (
+                <label key={key} className="flex items-center gap-3 py-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 rounded accent-primary"
+                    checked={form[key]}
+                    onChange={(e) => update(key, e.target.checked)}
+                  />
+                  <span className="text-sm font-medium">{label}</span>
+                </label>
+              ))}
+              <AnimatePresence initial={false}>
+                {form.flight_needed && (
+                  <motion.div
+                    key="transfer_home"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="overflow-hidden"
+                  >
+                    <label className="flex items-center gap-3 py-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="h-5 w-5 rounded accent-primary"
+                        checked={form.transfer_needed}
+                        onChange={(e) => update("transfer_needed", e.target.checked)}
+                      />
+                      <span className="text-sm font-medium">Transfer kućna adresa → aerodrom</span>
+                    </label>
+                  </motion.div>
+                )}
+                {form.hotel_needed && (
+                  <motion.div
+                    key="destination_transfer"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="overflow-hidden"
+                  >
+                    <label className="flex items-center gap-3 py-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="h-5 w-5 rounded accent-primary"
+                        checked={form.destination_transfer_needed}
+                        onChange={(e) => update("destination_transfer_needed", e.target.checked)}
+                      />
+                      <span className="text-sm font-medium">Transfer aerodrom → hotel (destinacija)</span>
+                    </label>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <AnimatePresence initial={false}>
+              {form.transfer_needed && form.flight_needed && (
+                <motion.div
+                  key="transfer_address"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-3">
+                    <FieldLabel htmlFor="transfer_address">Adresa polaska</FieldLabel>
+                    <input
+                      id="transfer_address"
+                      type="text"
+                      placeholder="npr. Ilica 42, Zagreb"
+                      className={inputClass}
+                      value={form.transfer_address}
+                      onChange={(e) => update("transfer_address", e.target.value)}
+                    />
+                    <ErrorText msg={errors.transfer_address} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <SectionLabel>{form.congress_needed ? "Kongres" : "Destinacija"}</SectionLabel>
             <div className="space-y-3">
-              <div>
-                <FieldLabel htmlFor="congress">Naziv kongresa</FieldLabel>
-                <input
-                  id="congress"
-                  type="text"
-                  placeholder="npr. ESC Congress 2026"
-                  className={inputClass}
-                  value={form.congress}
-                  onChange={(e) => update("congress", e.target.value)}
-                />
-                <ErrorText msg={errors.congress} />
-              </div>
-              <div>
-                <FieldLabel htmlFor="origin_city">Grad polaska</FieldLabel>
-                <input
-                  id="origin_city"
-                  type="text"
-                  placeholder="npr. Zagreb"
-                  className={inputClass}
-                  value={form.origin_city}
-                  onChange={(e) => update("origin_city", e.target.value)}
-                />
-                <ErrorText msg={errors.origin_city} />
-              </div>
+              {form.congress_needed ? (
+                <div>
+                  <FieldLabel htmlFor="congress">Naziv kongresa</FieldLabel>
+                  <input
+                    id="congress"
+                    type="text"
+                    placeholder="npr. ESC Congress 2026"
+                    className={inputClass}
+                    value={form.congress}
+                    onChange={(e) => update("congress", e.target.value)}
+                  />
+                  <ErrorText msg={errors.congress} />
+                </div>
+              ) : (
+                <div>
+                  <FieldLabel htmlFor="destination_city">Grad</FieldLabel>
+                  <input
+                    id="destination_city"
+                    type="text"
+                    placeholder="npr. Beč"
+                    className={inputClass}
+                    value={form.destination_city}
+                    onChange={(e) => update("destination_city", e.target.value)}
+                  />
+                  <ErrorText msg={errors.destination_city} />
+                </div>
+              )}
+              <AnimatePresence initial={false}>
+                {form.flight_needed && (
+                  <motion.div
+                    key="origin_city"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div>
+                      <FieldLabel htmlFor="origin_city">Grad polaska</FieldLabel>
+                      <input
+                        id="origin_city"
+                        type="text"
+                        placeholder="npr. Zagreb"
+                        className={inputClass}
+                        value={form.origin_city}
+                        onChange={(e) => update("origin_city", e.target.value)}
+                      />
+                      <ErrorText msg={errors.origin_city} />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <SectionLabel>Putovanje</SectionLabel>
@@ -326,72 +441,6 @@ function NovaPonudaPage() {
               </div>
             </div>
 
-            <SectionLabel>Usluge</SectionLabel>
-            <div className="space-y-2 rounded-2xl bg-card p-4 shadow-card">
-              {([
-                ["flight_needed", "Let"],
-                ["hotel_needed", "Hotel"],
-                ["transfer_needed", "Transfer kućna adresa → aerodrom"],
-              ] as const).map(([key, label]) => (
-                <label key={key} className="flex items-center gap-3 py-1.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="h-5 w-5 rounded accent-primary"
-                    checked={form[key]}
-                    onChange={(e) => update(key, e.target.checked)}
-                  />
-                  <span className="text-sm font-medium">{label}</span>
-                </label>
-              ))}
-              <AnimatePresence initial={false}>
-                {form.flight_needed && form.hotel_needed && (
-                  <motion.div
-                    key="destination_transfer"
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
-                    className="overflow-hidden"
-                  >
-                    <label className="flex items-center gap-3 py-1.5 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="h-5 w-5 rounded accent-primary"
-                        checked={form.destination_transfer_needed}
-                        onChange={(e) => update("destination_transfer_needed", e.target.checked)}
-                      />
-                      <span className="text-sm font-medium">Transfer aerodrom → hotel (destinacija)</span>
-                    </label>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <AnimatePresence initial={false}>
-              {form.transfer_needed && (
-                <motion.div
-                  key="transfer_address"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                  className="overflow-hidden"
-                >
-                  <div className="pt-3">
-                    <FieldLabel htmlFor="transfer_address">Adresa polaska</FieldLabel>
-                    <input
-                      id="transfer_address"
-                      type="text"
-                      placeholder="npr. Ilica 42, Zagreb"
-                      className={inputClass}
-                      value={form.transfer_address}
-                      onChange={(e) => update("transfer_address", e.target.value)}
-                    />
-                    <ErrorText msg={errors.transfer_address} />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             <button
               type="submit"
