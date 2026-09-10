@@ -377,6 +377,21 @@ export type Database = {
         }
         Relationships: []
       }
+      "hotels 5*": {
+        Row: {
+          hid: string
+          updated_at: string
+        }
+        Insert: {
+          hid: string
+          updated_at?: string
+        }
+        Update: {
+          hid?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       n8n_chat_histories: {
         Row: {
           id: number
@@ -586,6 +601,7 @@ export type Database = {
     }
     Functions: {
       match_4star_hotels: { Args: { candidates: Json }; Returns: Json }
+      match_5star_hotels: { Args: { candidates: Json }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
