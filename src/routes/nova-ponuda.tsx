@@ -99,7 +99,13 @@ function NovaPonudaPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setForm((f) => ({ ...f, [key]: value }));
+    setForm((f) => {
+      const next = { ...f, [key]: value };
+      if (key === "flight_needed" && value === false) {
+        next.transfer_needed = false;
+      }
+      return next;
+    });
   }
 
   function validate(): boolean {
