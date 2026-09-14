@@ -183,7 +183,7 @@ function NovaPonudaPage() {
   return (
     <MobileFrame>
       <PageHeader title="Nova ponuda" back={false} />
-      <div className="flex-1 overflow-y-auto bg-surface px-5 py-4">
+      <div className="flex-1 min-h-0 overflow-y-auto bg-surface px-5 py-4">
         {success ? (
           <div className="mt-8 rounded-2xl bg-card p-6 shadow-card text-center">
             <div className="mx-auto h-16 w-16 rounded-full bg-gradient-brand-soft flex items-center justify-center">

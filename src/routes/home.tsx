@@ -55,7 +55,7 @@ function HomePage() {
 
   return (
     <MobileFrame>
-      <div className="flex-1 overflow-y-auto pb-6">
+      <div className="flex-1 min-h-0 overflow-y-auto pb-6">
         <header className="bg-gradient-bg px-5 pt-6 pb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

@@ -65,7 +65,7 @@ function ChatPage() {
 
       {false && (
         <>
-          <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-3 bg-surface">
+          <div ref={scrollerRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-5 space-y-3 bg-surface">
             {messages.map((m) => (
               <motion.div
                 key={m.id}
@@ -127,7 +127,7 @@ function ChatPage() {
         </>
       )}
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center bg-surface">
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 text-center bg-surface">
         <p className="text-lg font-semibold text-foreground mb-2">
           Chat trenutno nije dostupan.
         </p>
