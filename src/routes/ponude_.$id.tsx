@@ -27,7 +27,7 @@ import {
 } from "@/hooks/useQuotes";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/ponude/$id")({
+export const Route = createFileRoute("/ponude_/$id")({
   head: ({ params }) => ({
     meta: [
       { title: "Detalji ponude | PICCARD³" },
