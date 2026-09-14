@@ -187,6 +187,74 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_requests: {
+        Row: {
+          booked_at: string | null
+          booked_by: string | null
+          created_at: string
+          id: string
+          include_fee: boolean
+          include_flight: boolean
+          include_hotel: boolean
+          include_transfer: boolean
+          notes: string | null
+          quote_id: string
+          requested_by_email: string | null
+          selected_fee: Json | null
+          selected_flight: Json | null
+          selected_hotel: Json | null
+          selected_transfer: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          booked_at?: string | null
+          booked_by?: string | null
+          created_at?: string
+          id?: string
+          include_fee?: boolean
+          include_flight?: boolean
+          include_hotel?: boolean
+          include_transfer?: boolean
+          notes?: string | null
+          quote_id: string
+          requested_by_email?: string | null
+          selected_fee?: Json | null
+          selected_flight?: Json | null
+          selected_hotel?: Json | null
+          selected_transfer?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          booked_at?: string | null
+          booked_by?: string | null
+          created_at?: string
+          id?: string
+          include_fee?: boolean
+          include_flight?: boolean
+          include_hotel?: boolean
+          include_transfer?: boolean
+          notes?: string | null
+          quote_id?: string
+          requested_by_email?: string | null
+          selected_fee?: Json | null
+          selected_flight?: Json | null
+          selected_hotel?: Json | null
+          selected_transfer?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_requests_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           company: string | null
