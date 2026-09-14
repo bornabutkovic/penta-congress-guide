@@ -338,7 +338,22 @@ export type Database = {
           },
         ]
       }
-      "hotels 4*": {
+      "hotels 5*": {
+        Row: {
+          hid: string
+          updated_at: string
+        }
+        Insert: {
+          hid: string
+          updated_at?: string
+        }
+        Update: {
+          hid?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hotels_by_stars: {
         Row: {
           address: string | null
           city: string | null
@@ -374,21 +389,6 @@ export type Database = {
           name?: string | null
           stars?: number | null
           updated_at?: string | null
-        }
-        Relationships: []
-      }
-      "hotels 5*": {
-        Row: {
-          hid: string
-          updated_at: string
-        }
-        Insert: {
-          hid: string
-          updated_at?: string
-        }
-        Update: {
-          hid?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -602,6 +602,10 @@ export type Database = {
     Functions: {
       match_4star_hotels: { Args: { candidates: Json }; Returns: Json }
       match_5star_hotels: { Args: { candidates: Json }; Returns: Json }
+      match_hotels_by_stars: {
+        Args: { candidates: Json; p_stars: number }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

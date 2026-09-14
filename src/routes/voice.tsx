@@ -127,7 +127,7 @@ function VoicePage() {
     <MobileFrame>
       <PageHeader title="Glasovni agent" back={false} />
 
-      <div className="flex flex-1 flex-col items-center justify-between px-6 py-8 bg-gradient-bg">
+      <div className="flex flex-1 min-h-0 flex-col items-center justify-between px-6 py-8 bg-gradient-bg">
         <div className="text-center">
           <h2 className="font-display text-xl font-bold">Razgovarajte s agentom</h2>
           <p className="mt-1 text-sm text-muted-foreground">

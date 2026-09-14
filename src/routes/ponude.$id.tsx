@@ -154,7 +154,7 @@ function QuoteDetailPage() {
     return (
       <MobileFrame>
         <PageHeader title="Detalji ponude" />
-        <div className="flex-1 overflow-y-auto bg-surface p-5 space-y-3">
+        <div className="flex-1 min-h-0 overflow-y-auto bg-surface p-5 space-y-3">
           <Skeleton className="h-24 w-full rounded-2xl" />
           <Skeleton className="h-16 w-full rounded-2xl" />
           <Skeleton className="h-16 w-full rounded-2xl" />
@@ -286,7 +286,7 @@ function QuoteDetailPage() {
     <MobileFrame>
       <PageHeader title="Detalji ponude" />
 
-      <div className="flex-1 overflow-y-auto bg-surface">
+      <div className="flex-1 min-h-0 overflow-y-auto bg-surface">
         <div className="relative px-5 pt-5 pb-6 bg-gradient-bg">
           <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-brand" />
           <div className="flex items-start justify-between gap-3">
