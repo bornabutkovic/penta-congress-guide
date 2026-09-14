@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
+import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import {
   parseRequestData,
@@ -407,10 +408,10 @@ function BookingRequestCard({
         include_hotel: !!selected.hotel && present.hotel,
         include_transfer: !!selected.transfer && present.transfer,
         include_fee: !!selected.fee && present.fee,
-        selected_flight: selected.flight && present.flight ? data.flight : null,
-        selected_hotel: selected.hotel && present.hotel ? data.hotel : null,
-        selected_transfer: selected.transfer && present.transfer ? data.transfer : null,
-        selected_fee: selected.fee && present.fee ? data.fee : null,
+        selected_flight: selected.flight && present.flight ? (data.flight as Json) : null,
+        selected_hotel: selected.hotel && present.hotel ? (data.hotel as Json) : null,
+        selected_transfer: selected.transfer && present.transfer ? (data.transfer as Json) : null,
+        selected_fee: selected.fee && present.fee ? (data.fee as Json) : null,
         requested_by_email: user?.email ?? null,
       });
       if (error) throw new Error(error.message);
