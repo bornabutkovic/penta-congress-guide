@@ -44,6 +44,7 @@ interface FormState {
   transfer_needed: boolean;
   transfer_address: string;
   destination_transfer_needed: boolean;
+  fee_needed: boolean;
 }
 
 const initialState: FormState = {
@@ -63,6 +64,7 @@ const initialState: FormState = {
   transfer_needed: true,
   transfer_address: "",
   destination_transfer_needed: true,
+  fee_needed: true,
 };
 
 type Errors = Partial<Record<keyof FormState, string>>;
@@ -103,6 +105,9 @@ function NovaPonudaPage() {
       const next = { ...f, [key]: value };
       if (key === "flight_needed" && value === false) {
         next.transfer_needed = false;
+      }
+      if (key === "congress_needed" && value === false) {
+        next.fee_needed = false;
       }
       return next;
     });
@@ -162,6 +167,7 @@ function NovaPonudaPage() {
           transfer_needed: form.transfer_needed,
           transfer_address: form.transfer_needed ? form.transfer_address.trim() : null,
           destination_transfer_needed: form.hotel_needed ? form.destination_transfer_needed : false,
+          fee_needed: form.congress_needed ? form.fee_needed : false,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -263,6 +269,26 @@ function NovaPonudaPage() {
                 </label>
               ))}
               <AnimatePresence initial={false}>
+                {form.congress_needed && (
+                  <motion.div
+                    key="fee_needed"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="overflow-hidden"
+                  >
+                    <label className="flex items-center gap-3 py-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="h-5 w-5 rounded accent-primary"
+                        checked={form.fee_needed}
+                        onChange={(e) => update("fee_needed", e.target.checked)}
+                      />
+                      <span className="text-sm font-medium">Kotizacija</span>
+                    </label>
+                  </motion.div>
+                )}
                 {form.flight_needed && (
                   <motion.div
                     key="transfer_home"

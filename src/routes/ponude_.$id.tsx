@@ -1,23 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Plane, BedDouble, Car, Ticket, MapPin, Calendar, Check, Loader2 } from "lucide-react";
+import { Plane, BedDouble, Car, Ticket, MapPin, Calendar, Check, Loader2, Send } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { MobileFrame } from "@/components/MobileFrame";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase";
+import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/useProfile";
 import {
   parseRequestData,
   statusMap,
@@ -78,15 +70,10 @@ function pickNum(obj: Record<string, unknown>, keys: string[]): number | undefin
 
 function QuoteDetailPage() {
   const { id } = Route.useParams();
-  const { user } = useAuth();
-  const { profile } = useProfile();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>("flight");
-  const [mutating, setMutating] = useState<null | "approve" | "reject">(null);
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [rejectComment, setRejectComment] = useState("");
 
   const fetchQuote = useCallback(async () => {
     const { data, error } = await supabase
@@ -104,50 +91,6 @@ function QuoteDetailPage() {
     fetchQuote();
   }, [fetchQuote]);
 
-  const approvedBy = profile?.full_name || user?.email || "agent";
-  const isAgent = profile?.role === "agent";
-
-  async function handleApprove() {
-    if (!quote) return;
-    setMutating("approve");
-    try {
-      const res = await fetch(
-        `https://penta.app.n8n.cloud/webhook/approve?token=${encodeURIComponent(quote.approval_token ?? "")}&approved_by=${encodeURIComponent(approvedBy)}`,
-      );
-      if (!res.ok) throw new Error("Odobrenje nije uspjelo (HTTP " + res.status + ")");
-      toast.success("Ponuda odobrena");
-      await fetchQuote();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Greška pri odobravanju");
-    } finally {
-      setMutating(null);
-    }
-  }
-
-  async function handleReject() {
-    if (!quote) return;
-    setMutating("reject");
-    try {
-      const res = await fetch("https://penta.app.n8n.cloud/webhook/reject", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: quote.approval_token,
-          comment: rejectComment.trim() || undefined,
-          approved_by: approvedBy,
-        }),
-      });
-      if (!res.ok) throw new Error("Odbijanje nije uspjelo (HTTP " + res.status + ")");
-      toast.success("Ponuda odbijena");
-      setRejectOpen(false);
-      setRejectComment("");
-      await fetchQuote();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Greška pri odbijanju");
-    } finally {
-      setMutating(null);
-    }
-  }
 
 
   if (loading) {
@@ -372,66 +315,191 @@ function QuoteDetailPage() {
           </div>
         </div>
 
-        {isAgent && quote.status === "pending_approval" && (
-          <div className="px-5 mt-2 mb-8 space-y-2">
-            <button
-              onClick={handleApprove}
-              disabled={mutating !== null}
-              className={cn(
-                "w-full h-12 rounded-xl bg-gradient-brand text-primary-foreground text-sm font-semibold shadow-elevated flex items-center justify-center gap-2 active:scale-[0.99] transition",
-                mutating !== null && "opacity-70 cursor-not-allowed",
-              )}
-            >
-              {mutating === "approve" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Odobri
-            </button>
-            <button
-              onClick={() => setRejectOpen(true)}
-              disabled={mutating !== null}
-              className={cn(
-                "w-full h-12 rounded-xl border border-destructive text-destructive text-sm font-semibold active:scale-[0.99] transition",
-                mutating !== null && "opacity-70 cursor-not-allowed",
-              )}
-            >
-              Odbij
-            </button>
-          </div>
-        )}
-      </div>
-
-      <Dialog open={rejectOpen} onOpenChange={(o) => !mutating && setRejectOpen(o)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Odbij ponudu</DialogTitle>
-          </DialogHeader>
-          <Textarea
-            value={rejectComment}
-            onChange={(e) => setRejectComment(e.target.value)}
-            placeholder="Razlog odbijanja (opcionalno)"
-            rows={4}
+        <div className="px-5 mb-8">
+          <BookingRequestCard
+            quoteId={quote.id}
+            data={{ flight, hotel, transfer, fee }}
+            present={{
+              flight: has(flight),
+              hotel: has(hotel),
+              transfer: has(transfer),
+              fee: has(fee),
+            }}
           />
-          <DialogFooter>
-            <button
-              onClick={() => setRejectOpen(false)}
-              disabled={mutating !== null}
-              className="h-10 px-4 rounded-xl border border-border text-sm font-medium"
-            >
-              Odustani
-            </button>
-            <button
-              onClick={handleReject}
-              disabled={mutating !== null}
-              className={cn(
-                "h-10 px-4 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold flex items-center gap-2",
-                mutating !== null && "opacity-70 cursor-not-allowed",
-              )}
-            >
-              {mutating === "reject" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Odbij ponudu
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
     </MobileFrame>
+  );
+}
+
+type BookingKey = "flight" | "hotel" | "transfer" | "fee";
+
+const bookingMeta: Record<BookingKey, { label: string; icon: typeof Plane }> = {
+  flight: { label: "Let", icon: Plane },
+  hotel: { label: "Smještaj", icon: BedDouble },
+  transfer: { label: "Transfer", icon: Car },
+  fee: { label: "Kotizacija", icon: Ticket },
+};
+
+const bookingStatusLabels: Record<string, string> = {
+  requested: "Zahtjev poslan — čeka ručnu rezervaciju",
+  manually_booked: "Rezervirano",
+  cancelled: "Zahtjev otkazan",
+};
+
+interface BookingRequestRow {
+  id: string;
+  status: string;
+  created_at: string;
+  include_flight: boolean;
+  include_hotel: boolean;
+  include_transfer: boolean;
+  include_fee: boolean;
+}
+
+function BookingRequestCard({
+  quoteId,
+  data,
+  present,
+}: {
+  quoteId: string;
+  data: Record<BookingKey, Record<string, unknown>>;
+  present: Record<BookingKey, boolean>;
+}) {
+  const { user } = useAuth();
+  const availableKeys = (Object.keys(bookingMeta) as BookingKey[]).filter((k) => present[k]);
+  const [request, setRequest] = useState<BookingRequestRow | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [selected, setSelected] = useState<Record<BookingKey, boolean>>({
+    flight: present.flight,
+    hotel: present.hotel,
+    transfer: present.transfer,
+    fee: present.fee,
+  });
+
+  const load = useCallback(async () => {
+    const { data: rows, error } = await supabase
+      .from("booking_requests")
+      .select("id,status,created_at,include_flight,include_hotel,include_transfer,include_fee")
+      .eq("quote_id", quoteId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (error) {
+      toast.error("Greška pri učitavanju zahtjeva za rezervaciju");
+    } else {
+      setRequest((rows?.[0] as BookingRequestRow | undefined) ?? null);
+    }
+    setLoading(false);
+  }, [quoteId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const anySelected = availableKeys.some((k) => selected[k]);
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from("booking_requests").insert({
+        quote_id: quoteId,
+        include_flight: !!selected.flight && present.flight,
+        include_hotel: !!selected.hotel && present.hotel,
+        include_transfer: !!selected.transfer && present.transfer,
+        include_fee: !!selected.fee && present.fee,
+        selected_flight: selected.flight && present.flight ? (data.flight as Json) : null,
+        selected_hotel: selected.hotel && present.hotel ? (data.hotel as Json) : null,
+        selected_transfer: selected.transfer && present.transfer ? (data.transfer as Json) : null,
+        selected_fee: selected.fee && present.fee ? (data.fee as Json) : null,
+        requested_by_email: user?.email ?? null,
+      });
+      if (error) throw new Error(error.message);
+      toast.success("Zahtjev za rezervaciju poslan");
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Greška pri slanju zahtjeva");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (loading) {
+    return <Skeleton className="h-28 w-full rounded-2xl" />;
+  }
+
+  if (request) {
+    const includedKeys = (Object.keys(bookingMeta) as BookingKey[]).filter(
+      (k) =>
+        request[`include_${k}` as "include_flight" | "include_hotel" | "include_transfer" | "include_fee"],
+    );
+    return (
+      <div className="rounded-2xl bg-card p-5 shadow-card">
+        <h3 className="font-display text-sm font-semibold">Zahtjev za rezervaciju</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Zahtjev za rezervaciju poslan — Penta agent će ručno dovršiti rezervaciju.
+        </p>
+        <div className="mt-4 space-y-2">
+          {includedKeys.map((k) => {
+            const Icon = bookingMeta[k].icon;
+            return (
+              <div key={k} className="flex items-center gap-2 text-sm">
+                <Icon className="h-4 w-4 text-primary" strokeWidth={2.2} />
+                {bookingMeta[k].label}
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground space-y-1">
+          <p>
+            <span className="font-semibold">Status:</span>{" "}
+            {bookingStatusLabels[request.status] ?? request.status}
+          </p>
+          <p>
+            <span className="font-semibold">Poslano:</span>{" "}
+            {new Date(request.created_at).toLocaleDateString("hr-HR")}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (availableKeys.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl bg-card p-5 shadow-card">
+      <h3 className="font-display text-sm font-semibold">Zahtjev za rezervaciju</h3>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Odaberite stavke koje želite rezervirati. Penta agent zatim ručno dovršava rezervaciju.
+      </p>
+      <div className="mt-4 space-y-2">
+        {availableKeys.map((k) => {
+          const Icon = bookingMeta[k].icon;
+          return (
+            <label key={k} className="flex items-center gap-3 py-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                className="h-5 w-5 rounded accent-primary"
+                checked={!!selected[k]}
+                onChange={(e) => setSelected((s) => ({ ...s, [k]: e.target.checked }))}
+              />
+              <Icon className="h-4 w-4 text-primary" strokeWidth={2.2} />
+              <span className="text-sm font-medium">{bookingMeta[k].label}</span>
+            </label>
+          );
+        })}
+      </div>
+      <button
+        onClick={handleSubmit}
+        disabled={submitting || !anySelected}
+        className={cn(
+          "mt-5 w-full h-12 rounded-xl bg-gradient-brand text-primary-foreground text-sm font-semibold shadow-elevated flex items-center justify-center gap-2 active:scale-[0.99] transition",
+          (submitting || !anySelected) && "opacity-60 cursor-not-allowed",
+        )}
+      >
+        {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+        Pošalji zahtjev za rezervaciju
+      </button>
+    </div>
   );
 }
