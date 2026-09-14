@@ -15,7 +15,7 @@ import { Route as NovaPonudaRouteImport } from './routes/nova-ponuda'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as PonudeIdRouteImport } from './routes/ponude.$id'
+import { Route as PonudeIdRouteImport } from './routes/ponude_.$id'
 
 const VoiceRoute = VoiceRouteImport.update({
   id: '/voice',
@@ -48,9 +48,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const PonudeIdRoute = PonudeIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => PonudeRoute,
+  id: '/ponude_/$id',
+  path: '/ponude/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -58,7 +58,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof ChatRoute
   '/home': typeof HomeRoute
   '/nova-ponuda': typeof NovaPonudaRoute
-  '/ponude': typeof PonudeRouteWithChildren
+  '/ponude': typeof PonudeRoute
   '/voice': typeof VoiceRoute
   '/ponude/$id': typeof PonudeIdRoute
 }
@@ -67,7 +67,7 @@ export interface FileRoutesByTo {
   '/chat': typeof ChatRoute
   '/home': typeof HomeRoute
   '/nova-ponuda': typeof NovaPonudaRoute
-  '/ponude': typeof PonudeRouteWithChildren
+  '/ponude': typeof PonudeRoute
   '/voice': typeof VoiceRoute
   '/ponude/$id': typeof PonudeIdRoute
 }
@@ -77,9 +77,9 @@ export interface FileRoutesById {
   '/chat': typeof ChatRoute
   '/home': typeof HomeRoute
   '/nova-ponuda': typeof NovaPonudaRoute
-  '/ponude': typeof PonudeRouteWithChildren
+  '/ponude': typeof PonudeRoute
   '/voice': typeof VoiceRoute
-  '/ponude/$id': typeof PonudeIdRoute
+  '/ponude_/$id': typeof PonudeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -108,7 +108,7 @@ export interface FileRouteTypes {
     | '/nova-ponuda'
     | '/ponude'
     | '/voice'
-    | '/ponude/$id'
+    | '/ponude_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -116,8 +116,9 @@ export interface RootRouteChildren {
   ChatRoute: typeof ChatRoute
   HomeRoute: typeof HomeRoute
   NovaPonudaRoute: typeof NovaPonudaRoute
-  PonudeRoute: typeof PonudeRouteWithChildren
+  PonudeRoute: typeof PonudeRoute
   VoiceRoute: typeof VoiceRoute
+  PonudeIdRoute: typeof PonudeIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -164,34 +165,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/ponude/$id': {
-      id: '/ponude/$id'
-      path: '/$id'
+    '/ponude_/$id': {
+      id: '/ponude_/$id'
+      path: '/ponude/$id'
       fullPath: '/ponude/$id'
       preLoaderRoute: typeof PonudeIdRouteImport
-      parentRoute: typeof PonudeRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
-
-interface PonudeRouteChildren {
-  PonudeIdRoute: typeof PonudeIdRoute
-}
-
-const PonudeRouteChildren: PonudeRouteChildren = {
-  PonudeIdRoute: PonudeIdRoute,
-}
-
-const PonudeRouteWithChildren =
-  PonudeRoute._addFileChildren(PonudeRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChatRoute: ChatRoute,
   HomeRoute: HomeRoute,
   NovaPonudaRoute: NovaPonudaRoute,
-  PonudeRoute: PonudeRouteWithChildren,
+  PonudeRoute: PonudeRoute,
   VoiceRoute: VoiceRoute,
+  PonudeIdRoute: PonudeIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
