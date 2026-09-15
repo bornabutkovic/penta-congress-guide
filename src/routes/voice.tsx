@@ -94,6 +94,9 @@ function VoicePage() {
 
       await retellClientRef.current?.startCall({
         accessToken,
+        callId: data.call_id,
+        transport: data.transport,
+        iceServers: data.ice_servers,
         sampleRate: 24000,
       });
     } catch (err) {
