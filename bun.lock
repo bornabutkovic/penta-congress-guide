@@ -54,7 +54,7 @@
         "react-hook-form": "^7.71.2",
         "react-resizable-panels": "^4.6.5",
         "recharts": "^2.15.4",
-        "retell-client-js-sdk": "^2.0.8",
+        "retell-client-js-sdk": "^3.0.1",
         "sonner": "^2.0.7",
         "tailwind-merge": "^3.5.0",
         "tailwindcss": "^4.2.1",
@@ -1156,7 +1156,7 @@
 
     "resolve-pkg-maps": ["resolve-pkg-maps@1.0.0", "", {}, "sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw=="],
 
-    "retell-client-js-sdk": ["retell-client-js-sdk@2.0.8", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/retell-client-js-sdk/-/retell-client-js-sdk-2.0.8.tgz", { "dependencies": { "eventemitter3": "^5.0.1", "livekit-client": "^2.5.1" } }, "sha512-t6bobUwqVx0DFayN389z4HbjUxyUrn9VO3ZJPMaoGrVh3qPZbGPC8DwopYLj6UgkTwpHijFX77aaeQghLGGJ7Q=="],
+    "retell-client-js-sdk": ["retell-client-js-sdk@3.0.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/retell-client-js-sdk/-/retell-client-js-sdk-3.0.1.tgz", { "dependencies": { "eventemitter3": "^5.0.1", "livekit-client": "^2.5.1" } }, "sha512-fVUIoZU78YyqYzpxwSQvmFB2Jn2oi9Tm/v7n7gOMVkEehg0YIwwvJHg3BIUm9QpWMAqht3GAzc7rPa05orJTlA=="],
 
     "rolldown": ["rolldown@1.1.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/rolldown/-/rolldown-1.1.0.tgz", { "dependencies": { "@oxc-project/types": "=0.134.0", "@rolldown/pluginutils": "^1.0.0" }, "optionalDependencies": { "@rolldown/binding-android-arm64": "1.1.0", "@rolldown/binding-darwin-arm64": "1.1.0", "@rolldown/binding-darwin-x64": "1.1.0", "@rolldown/binding-freebsd-x64": "1.1.0", "@rolldown/binding-linux-arm-gnueabihf": "1.1.0", "@rolldown/binding-linux-arm64-gnu": "1.1.0", "@rolldown/binding-linux-arm64-musl": "1.1.0", "@rolldown/binding-linux-ppc64-gnu": "1.1.0", "@rolldown/binding-linux-s390x-gnu": "1.1.0", "@rolldown/binding-linux-x64-gnu": "1.1.0", "@rolldown/binding-linux-x64-musl": "1.1.0", "@rolldown/binding-openharmony-arm64": "1.1.0", "@rolldown/binding-wasm32-wasi": "1.1.0", "@rolldown/binding-win32-arm64-msvc": "1.1.0", "@rolldown/binding-win32-x64-msvc": "1.1.0" }, "bin": { "rolldown": "./bin/cli.mjs" } }, "sha512-zpMvlJhs5PkXRTtKc0CaLBVI9AR/VDiJFpM+kx//hgToEca7FgMlGjaRIisXBcb19T76LswgmKECSQ96hjWr5A=="],
 
