@@ -191,13 +191,18 @@ export type Database = {
         Row: {
           booked_at: string | null
           booked_by: string | null
+          confirmed_at: string | null
+          confirmed_by_email: string | null
           created_at: string
+          failed_at: string | null
+          failure_reason: string | null
           id: string
           include_fee: boolean
           include_flight: boolean
           include_hotel: boolean
           include_transfer: boolean
           notes: string | null
+          price_check: Json | null
           quote_id: string
           requested_by_email: string | null
           selected_fee: Json | null
@@ -206,17 +211,24 @@ export type Database = {
           selected_transfer: Json | null
           status: string
           updated_at: string
+          vendor_booking_reference: string | null
+          vendor_response: Json | null
         }
         Insert: {
           booked_at?: string | null
           booked_by?: string | null
+          confirmed_at?: string | null
+          confirmed_by_email?: string | null
           created_at?: string
+          failed_at?: string | null
+          failure_reason?: string | null
           id?: string
           include_fee?: boolean
           include_flight?: boolean
           include_hotel?: boolean
           include_transfer?: boolean
           notes?: string | null
+          price_check?: Json | null
           quote_id: string
           requested_by_email?: string | null
           selected_fee?: Json | null
@@ -225,17 +237,24 @@ export type Database = {
           selected_transfer?: Json | null
           status?: string
           updated_at?: string
+          vendor_booking_reference?: string | null
+          vendor_response?: Json | null
         }
         Update: {
           booked_at?: string | null
           booked_by?: string | null
+          confirmed_at?: string | null
+          confirmed_by_email?: string | null
           created_at?: string
+          failed_at?: string | null
+          failure_reason?: string | null
           id?: string
           include_fee?: boolean
           include_flight?: boolean
           include_hotel?: boolean
           include_transfer?: boolean
           notes?: string | null
+          price_check?: Json | null
           quote_id?: string
           requested_by_email?: string | null
           selected_fee?: Json | null
@@ -244,6 +263,8 @@ export type Database = {
           selected_transfer?: Json | null
           status?: string
           updated_at?: string
+          vendor_booking_reference?: string | null
+          vendor_response?: Json | null
         }
         Relationships: [
           {
@@ -258,6 +279,7 @@ export type Database = {
       clients: {
         Row: {
           company: string | null
+          company_id: string | null
           created_at: string | null
           email: string | null
           id: string
@@ -267,6 +289,7 @@ export type Database = {
         }
         Insert: {
           company?: string | null
+          company_id?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -276,6 +299,7 @@ export type Database = {
         }
         Update: {
           company?: string | null
+          company_id?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -283,7 +307,219 @@ export type Database = {
           name?: string | null
           whatsapp_number?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "clients_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          address: string | null
+          city: string | null
+          contact_email: string | null
+          contact_mobile: string | null
+          contact_phone: string | null
+          country: string | null
+          created_at: string | null
+          domain: string | null
+          id: string
+          name: string
+          notes: string | null
+          oib: string | null
+          payment_terms_days: number | null
+          payment_terms_note: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          contact_email?: string | null
+          contact_mobile?: string | null
+          contact_phone?: string | null
+          country?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          oib?: string | null
+          payment_terms_days?: number | null
+          payment_terms_note?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          contact_email?: string | null
+          contact_mobile?: string | null
+          contact_phone?: string | null
+          country?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          oib?: string | null
+          payment_terms_days?: number | null
+          payment_terms_note?: string | null
+          status?: string
+          updated_at?: string | null
+        }
         Relationships: []
+      }
+      company_fee_schedules: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          flight_domestic_business_eur: number | null
+          flight_domestic_economy_eur: number | null
+          flight_europe_business_eur: number | null
+          flight_europe_economy_eur: number | null
+          flight_intercontinental_business_eur: number | null
+          flight_intercontinental_economy_eur: number | null
+          hotel_commission_pct: number | null
+          id: string
+          notes: string | null
+          transfer_commission_pct: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          flight_domestic_business_eur?: number | null
+          flight_domestic_economy_eur?: number | null
+          flight_europe_business_eur?: number | null
+          flight_europe_economy_eur?: number | null
+          flight_intercontinental_business_eur?: number | null
+          flight_intercontinental_economy_eur?: number | null
+          hotel_commission_pct?: number | null
+          id?: string
+          notes?: string | null
+          transfer_commission_pct?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          flight_domestic_business_eur?: number | null
+          flight_domestic_economy_eur?: number | null
+          flight_europe_business_eur?: number | null
+          flight_europe_economy_eur?: number | null
+          flight_intercontinental_business_eur?: number | null
+          flight_intercontinental_economy_eur?: number | null
+          hotel_commission_pct?: number | null
+          id?: string
+          notes?: string | null
+          transfer_commission_pct?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_fee_schedules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_policy_destination_rates: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          destination: string
+          id: string
+          max_nightly_rate_eur: number
+          policy_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          destination: string
+          id?: string
+          max_nightly_rate_eur: number
+          policy_id: string
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          destination?: string
+          id?: string
+          max_nightly_rate_eur?: number
+          policy_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_policy_destination_rates_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "company_travel_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_travel_policies: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          hotel_near_venue_required: boolean | null
+          id: string
+          long_flight_class: string | null
+          max_accommodation_stars: number | null
+          max_flight_class: string | null
+          min_accommodation_stars: number | null
+          notes: string | null
+          short_flight_class: string | null
+          short_flight_max_hours: number | null
+          traveler_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          hotel_near_venue_required?: boolean | null
+          id?: string
+          long_flight_class?: string | null
+          max_accommodation_stars?: number | null
+          max_flight_class?: string | null
+          min_accommodation_stars?: number | null
+          notes?: string | null
+          short_flight_class?: string | null
+          short_flight_max_hours?: number | null
+          traveler_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          hotel_near_venue_required?: boolean | null
+          id?: string
+          long_flight_class?: string | null
+          max_accommodation_stars?: number | null
+          max_flight_class?: string | null
+          min_accommodation_stars?: number | null
+          notes?: string | null
+          short_flight_class?: string | null
+          short_flight_max_hours?: number | null
+          traveler_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_travel_policies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       congresses: {
         Row: {
@@ -406,21 +642,6 @@ export type Database = {
           },
         ]
       }
-      "hotels 5*": {
-        Row: {
-          hid: string
-          updated_at: string
-        }
-        Insert: {
-          hid: string
-          updated_at?: string
-        }
-        Update: {
-          hid?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       hotels_by_stars: {
         Row: {
           address: string | null
@@ -481,6 +702,7 @@ export type Database = {
       profiles: {
         Row: {
           company: string
+          company_id: string | null
           created_at: string
           full_name: string
           id: string
@@ -488,6 +710,7 @@ export type Database = {
         }
         Insert: {
           company?: string
+          company_id?: string | null
           created_at?: string
           full_name?: string
           id: string
@@ -495,12 +718,21 @@ export type Database = {
         }
         Update: {
           company?: string
+          company_id?: string | null
           created_at?: string
           full_name?: string
           id?: string
           role?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quote_approvals: {
         Row: {
@@ -668,8 +900,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_applicable_fee_schedule: {
+        Args: { p_company_id?: string }
+        Returns: Json
+      }
+      get_applicable_travel_policy: {
+        Args: { p_company_id: string; p_traveler_type: string }
+        Returns: Json
+      }
       match_4star_hotels: { Args: { candidates: Json }; Returns: Json }
-      match_5star_hotels: { Args: { candidates: Json }; Returns: Json }
       match_hotels_by_stars: {
         Args: { candidates: Json; p_stars: number }
         Returns: Json

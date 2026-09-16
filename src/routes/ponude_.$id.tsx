@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Plane, BedDouble, Car, Ticket, MapPin, Calendar, Check, Loader2, Send } from "lucide-react";
+import { Plane, BedDouble, Car, Ticket, MapPin, Calendar, Check, Loader2, Send, Star } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { MobileFrame } from "@/components/MobileFrame";
@@ -50,30 +50,142 @@ function currentStep(status: QuoteDbStatus) {
   }
 }
 
-function pick(obj: Record<string, unknown>, keys: string[]): string | undefined {
-  for (const k of keys) {
-    const v = obj?.[k];
-    if (v !== undefined && v !== null && v !== "") return String(v);
-  }
-  return undefined;
+type CategoryKind = "flight" | "hotel" | "transfer" | "fee";
+
+interface NormalizedOption {
+  key: string;
+  title: string;
+  subtitle?: string;
+  price?: number;
+  recommended?: boolean;
+  raw: Record<string, unknown>;
 }
 
-function pickNum(obj: Record<string, unknown>, keys: string[]): number | undefined {
-  for (const k of keys) {
-    const v = obj?.[k];
-    if (v === undefined || v === null || v === "") continue;
-    const n = typeof v === "number" ? v : Number(v);
-    if (!Number.isNaN(n)) return n;
+interface CategoryView {
+  kind: CategoryKind;
+  label: string;
+  icon: typeof Plane;
+  visible: boolean;
+  items: NormalizedOption[];
+  emptyMessage?: string;
+}
+
+const categoryMeta: Record<CategoryKind, { label: string; icon: typeof Plane }> = {
+  flight: { label: "Let", icon: Plane },
+  hotel: { label: "Smještaj", icon: BedDouble },
+  transfer: { label: "Transfer", icon: Car },
+  fee: { label: "Kotizacija", icon: Ticket },
+};
+
+function num(v: unknown): number | undefined {
+  if (v === null || v === undefined || v === "") return undefined;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isNaN(n) ? undefined : n;
+}
+
+function buildCategoryView(kind: CategoryKind, data: Record<string, unknown>): CategoryView {
+  const meta = categoryMeta[kind];
+  const exists = !!data && Object.keys(data).length > 0;
+  const reason = typeof data.reason === "string" ? data.reason : undefined;
+
+  if (kind === "flight") {
+    const notNeeded = reason === "no_flight_needed";
+    const opts = Array.isArray(data.options) ? (data.options as Record<string, unknown>[]) : [];
+    const items: NormalizedOption[] = opts.map((o, i) => {
+      const outbound = o.outbound as Record<string, unknown> | undefined;
+      const inbound = o.inbound as Record<string, unknown> | undefined;
+      const stops = num(outbound?.stops) ?? 0;
+      const layover = (outbound?.layover_summary as string) || (stops > 0 ? `${stops} presjedanja` : "Direktan let");
+      const bags = num(o.bags_included) ?? 0;
+      return {
+        key: String(o.offer_id ?? i),
+        title: `${o.airline ?? "Let"} · ${outbound?.origin ?? ""} → ${outbound?.destination ?? ""}`,
+        subtitle: [layover, inbound ? "povratni uključen" : "samo u jednom smjeru", bags > 0 ? `${bags}× predana prtljaga` : "bez predane prtljage"].join(" · "),
+        price: num(o.price_total),
+        raw: o,
+      };
+    });
+    return {
+      kind, label: meta.label, icon: meta.icon,
+      visible: !notNeeded,
+      items,
+      emptyMessage: !notNeeded && items.length === 0
+        ? "Pretraga nije vratila nijedan let (moguće da su svi letovi bez predane prtljage ili izvan traženog vremena) – potrebna ručna provjera."
+        : undefined,
+    };
   }
-  return undefined;
+
+  if (kind === "hotel") {
+    const notNeeded = reason === "no_hotel_needed";
+    const opts = Array.isArray(data.options) ? (data.options as Record<string, unknown>[]) : [];
+    const recommended = data.recommended as Record<string, unknown> | null | undefined;
+    const recId = recommended ? String(recommended.hid ?? "") : null;
+    const items: NormalizedOption[] = opts.map((o, i) => ({
+      key: String(o.hid ?? i),
+      title: (o.ratehawk_confirmed_name as string) || (o.room_name as string) || `Hotel #${i + 1}`,
+      subtitle: [o.room_name, o.rate_label, o.rooms ? `${o.rooms} soba` : null].filter(Boolean).join(" · "),
+      price: num(o.price),
+      recommended: recId != null && String(o.hid) === recId,
+      raw: o,
+    }));
+    const venueMsg = (data.venue as Record<string, unknown> | undefined)?.message as string | undefined;
+    const centerMsg = (data.center as Record<string, unknown> | undefined)?.message as string | undefined;
+    return {
+      kind, label: meta.label, icon: meta.icon,
+      visible: !notNeeded,
+      items,
+      emptyMessage: !notNeeded && items.length === 0
+        ? (venueMsg || centerMsg || "Pretraga nije vratila dostupne hotele u traženoj kategoriji – potrebna ručna provjera.")
+        : undefined,
+    };
+  }
+
+  if (kind === "transfer") {
+    const notNeeded = reason === "no_transfer_needed";
+    const opts = Array.isArray(data.options) ? (data.options as Record<string, unknown>[]) : [];
+    const items: NormalizedOption[] = opts.map((o, i) => ({
+      key: String(i),
+      title: (o.vehicle as string) || "Transfer",
+      subtitle: o.route as string | undefined,
+      price: num(o.price_total) ?? num(o.price_per_direction),
+      raw: o,
+    }));
+    return {
+      kind, label: meta.label, icon: meta.icon,
+      visible: !notNeeded,
+      items,
+      emptyMessage: !notNeeded && items.length === 0
+        ? "Pretraga transfera nije vratila opcije – potrebna ručna provjera."
+        : undefined,
+    };
+  }
+
+  const cats = Array.isArray(data.all_categories) ? (data.all_categories as Record<string, unknown>[]) : [];
+  const preferred = data.preferred_category as Record<string, unknown> | null | undefined;
+  const items: NormalizedOption[] = cats.map((c, i) => ({
+    key: String(i),
+    title: c.type as string,
+    subtitle: c.deadline ? (c.is_expired ? `Istekao rok: ${c.deadline}` : `Rok: ${c.deadline}`) : undefined,
+    price: num(c.price),
+    recommended: !!preferred && preferred.type === c.type,
+    raw: c,
+  }));
+  return {
+    kind, label: meta.label, icon: meta.icon,
+    visible: exists,
+    items,
+    emptyMessage: exists && items.length === 0
+      ? ((data.notes as string) || "Nije pronađena kotizacija za ovaj kongres – potrebna ručna provjera.")
+      : undefined,
+  };
 }
 
 function QuoteDetailPage() {
   const { id } = Route.useParams();
+  const { user } = useAuth();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [open, setOpen] = useState<string | null>("flight");
 
   const fetchQuote = useCallback(async () => {
     const { data, error } = await supabase
@@ -90,8 +202,6 @@ function QuoteDetailPage() {
     setLoading(true);
     fetchQuote();
   }, [fetchQuote]);
-
-
 
   if (loading) {
     return (
@@ -129,101 +239,27 @@ function QuoteDetailPage() {
   }
 
   const req = parseRequestData(quote.request_data);
-  const flight = parseRequestData(quote.flight_data);
-  const hotel = parseRequestData(quote.hotel_data);
-  const transfer = parseRequestData(quote.transfer_data);
-  const fee = parseRequestData(quote.fee_data);
+  const flightData = parseRequestData(quote.flight_data);
+  const hotelData = parseRequestData(quote.hotel_data);
+  const transferData = parseRequestData(quote.transfer_data);
+  const feeData = parseRequestData(quote.fee_data);
 
   const congressName = (req.congress_name as string) || quote.client_name || "Ponuda";
-  const city = (req.city as string) || "";
-  const country = (req.country as string) || "";
+  const city = (req.congress_city as string) || "";
+  const country = (req.congress_country as string) || "";
   const checkin = req.checkin as string | undefined;
   const checkout = req.checkout as string | undefined;
   const dates = checkin && checkout ? `${checkin} – ${checkout}` : checkin || checkout || "";
-  const origin = (req.origin_city as string) || "";
 
   const uiStatus = statusMap[quote.status] ?? "pending";
   const step = currentStep(quote.status);
 
-  const has = (o: Record<string, unknown>) => o && Object.keys(o).length > 0;
-
-  const sections = [
-    {
-      key: "flight",
-      label: "Let",
-      icon: Plane,
-      present: has(flight),
-      body: (() => {
-        const from = pick(flight, ["from", "origin", "origin_city", "departure"]) || origin;
-        const to = pick(flight, ["to", "destination", "arrival"]) || city;
-        const airline = pick(flight, ["airline", "carrier"]);
-        const flightDates = pick(flight, ["dates", "date", "departure_date"]);
-        const price = pickNum(flight, ["price", "total", "amount"]);
-        return (
-          <div className="text-sm space-y-1.5">
-            {(from || to) && (
-              <p><span className="text-muted-foreground">Ruta:</span> <b>{from} → {to}</b></p>
-            )}
-            {airline && <p><span className="text-muted-foreground">Aviokompanija:</span> {airline}</p>}
-            {flightDates && <p><span className="text-muted-foreground">Datumi:</span> {flightDates}</p>}
-            {price !== undefined && <p className="font-display pt-1 font-bold">{formatEur(price)}</p>}
-          </div>
-        );
-      })(),
-    },
-    {
-      key: "hotel",
-      label: "Smještaj",
-      icon: BedDouble,
-      present: has(hotel),
-      body: (() => {
-        const name = pick(hotel, ["name", "hotel_name", "hotel"]);
-        const room = pick(hotel, ["room", "room_name", "room_type"]);
-        const nights = pick(hotel, ["nights"]);
-        const price = pickNum(hotel, ["price", "total", "amount"]);
-        return (
-          <div className="text-sm space-y-1.5">
-            {name && <p><b>{name}</b></p>}
-            {room && <p><span className="text-muted-foreground">Soba:</span> {room}</p>}
-            {nights && <p><span className="text-muted-foreground">Noćenja:</span> {nights}</p>}
-            {price !== undefined && <p className="font-display pt-1 font-bold">{formatEur(price)}</p>}
-          </div>
-        );
-      })(),
-    },
-    {
-      key: "transfer",
-      label: "Transfer",
-      icon: Car,
-      present: has(transfer),
-      body: (() => {
-        const type = pick(transfer, ["type", "name", "description"]);
-        const price = pickNum(transfer, ["price", "total", "amount"]);
-        return (
-          <div className="text-sm space-y-1.5">
-            {type && <p>{type}</p>}
-            {price !== undefined && <p className="font-display pt-1 font-bold">{formatEur(price)}</p>}
-          </div>
-        );
-      })(),
-    },
-    {
-      key: "fee",
-      label: "Kotizacija",
-      icon: Ticket,
-      present: has(fee),
-      body: (() => {
-        const name = pick(fee, ["name", "type", "description"]);
-        const price = pickNum(fee, ["price", "total", "amount"]);
-        return (
-          <div className="text-sm space-y-1.5">
-            {name && <p>{name}</p>}
-            {price !== undefined && <p className="font-display pt-1 font-bold">{formatEur(price)}</p>}
-          </div>
-        );
-      })(),
-    },
-  ];
+  const categories: CategoryView[] = [
+    buildCategoryView("flight", flightData),
+    buildCategoryView("hotel", hotelData),
+    buildCategoryView("transfer", transferData),
+    buildCategoryView("fee", feeData),
+  ].filter((c) => c.visible);
 
   return (
     <MobileFrame>
@@ -258,35 +294,22 @@ function QuoteDetailPage() {
           </div>
         </div>
 
-        <div className="px-5 mt-4 space-y-3">
-          {sections.map(({ key, label, icon: Icon, present, body }) => {
-            const isOpen = open === key;
-            return (
-              <div key={key} className="rounded-2xl bg-card shadow-card overflow-hidden">
-                <button
-                  onClick={() => setOpen(isOpen ? null : key)}
-                  className="flex w-full items-center gap-3 p-4"
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-brand-soft text-gradient-brand">
-                    <Icon className="h-5 w-5" strokeWidth={2.2} />
-                  </span>
-                  <span className="flex-1 text-left text-sm font-semibold">{label}</span>
-                  <span className={cn("text-xs text-muted-foreground transition", isOpen && "rotate-180")}>▾</span>
-                </button>
-                <motion.div
-                  initial={false}
-                  animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-4 pb-4 pl-[68px]">
-                    {present ? body : (
-                      <p className="text-sm text-muted-foreground">Nije uključeno u ponudu</p>
-                    )}
-                  </div>
-                </motion.div>
-              </div>
-            );
-          })}
+        <div className="px-5 mt-4">
+          <h3 className="font-display mb-3 text-sm font-semibold">Stavke ponude</h3>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Prikazane su samo stavke koje su tražene u zahtjevu. Odaberite po jednu opciju za svaku stavku koju želite poslati na rezervaciju.
+          </p>
+        </div>
+
+        <div className="px-5 space-y-3">
+          {categories.length === 0 && (
+            <div className="rounded-2xl bg-card p-5 shadow-card text-sm text-muted-foreground">
+              Za ovu ponudu nije tražena nijedna stavka (let/smještaj/transfer/kotizacija).
+            </div>
+          )}
+          {categories.map((cat) => (
+            <CategorySection key={cat.kind} category={cat} />
+          ))}
         </div>
 
         <div className="px-5 mt-6 mb-8">
@@ -316,30 +339,58 @@ function QuoteDetailPage() {
         </div>
 
         <div className="px-5 mb-8">
-          <BookingRequestCard
-            quoteId={quote.id}
-            data={{ flight, hotel, transfer, fee }}
-            present={{
-              flight: has(flight),
-              hotel: has(hotel),
-              transfer: has(transfer),
-              fee: has(fee),
-            }}
-          />
+          <FinalReservationCard quoteId={quote.id} categories={categories} userEmail={user?.email ?? null} />
         </div>
       </div>
     </MobileFrame>
   );
 }
 
-type BookingKey = "flight" | "hotel" | "transfer" | "fee";
+function CategorySection({ category }: { category: CategoryView }) {
+  const [open, setOpen] = useState(false);
+  const Icon = category.icon;
+  const count = category.items.length;
 
-const bookingMeta: Record<BookingKey, { label: string; icon: typeof Plane }> = {
-  flight: { label: "Let", icon: Plane },
-  hotel: { label: "Smještaj", icon: BedDouble },
-  transfer: { label: "Transfer", icon: Car },
-  fee: { label: "Kotizacija", icon: Ticket },
-};
+  return (
+    <div className="rounded-2xl bg-card shadow-card overflow-hidden">
+      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-3 p-4">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-brand-soft text-gradient-brand">
+          <Icon className="h-5 w-5" strokeWidth={2.2} />
+        </span>
+        <span className="flex-1 text-left text-sm font-semibold">
+          {category.label}
+          {count > 0 && <span className="ml-2 text-xs font-normal text-muted-foreground">{count} {count === 1 ? "opcija" : "opcije"}</span>}
+        </span>
+        <span className={cn("text-xs text-muted-foreground transition", open && "rotate-180")}>▾</span>
+      </button>
+      <motion.div initial={false} animate={{ height: open ? "auto" : 0, opacity: open ? 1 : 0 }} className="overflow-hidden">
+        <div className="px-4 pb-4 pl-[68px] space-y-2">
+          {category.items.length === 0 && (
+            <p className="text-sm text-amber-600">{category.emptyMessage}</p>
+          )}
+          {category.items.map((item) => (
+            <div key={item.key} className="rounded-xl border border-border p-3 text-sm">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-semibold">
+                    {item.title}
+                    {item.recommended && (
+                      <span className="ml-2 inline-flex items-center gap-0.5 text-[10px] font-semibold text-gradient-brand uppercase tracking-wider">
+                        <Star className="h-3 w-3" /> Preporučeno
+                      </span>
+                    )}
+                  </p>
+                  {item.subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{item.subtitle}</p>}
+                </div>
+                {item.price !== undefined && <p className="font-display shrink-0 font-bold">{formatEur(item.price)}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 const bookingStatusLabels: Record<string, string> = {
   requested: "Zahtjev poslan — čeka ručnu rezervaciju",
@@ -355,40 +406,48 @@ interface BookingRequestRow {
   include_hotel: boolean;
   include_transfer: boolean;
   include_fee: boolean;
+  selected_flight: Record<string, unknown> | null;
+  selected_hotel: Record<string, unknown> | null;
+  selected_transfer: Record<string, unknown> | null;
+  selected_fee: Record<string, unknown> | null;
 }
 
-function BookingRequestCard({
+function optionSummary(raw: Record<string, unknown> | null | undefined, kind: CategoryKind): string {
+  if (!raw) return "";
+  if (kind === "flight") return `${raw.airline ?? ""} — ${formatEur(num(raw.price_total) ?? 0)}`;
+  if (kind === "hotel") return `${raw.ratehawk_confirmed_name ?? raw.room_name ?? ""} — ${formatEur(num(raw.price) ?? 0)}`;
+  if (kind === "transfer") return `${raw.vehicle ?? ""} — ${formatEur(num(raw.price_total) ?? num(raw.price_per_direction) ?? 0)}`;
+  return `${raw.type ?? ""} — ${formatEur(num(raw.price) ?? 0)}`;
+}
+
+function FinalReservationCard({
   quoteId,
-  data,
-  present,
+  categories,
+  userEmail,
 }: {
   quoteId: string;
-  data: Record<BookingKey, Record<string, unknown>>;
-  present: Record<BookingKey, boolean>;
+  categories: CategoryView[];
+  userEmail: string | null;
 }) {
-  const { user } = useAuth();
-  const availableKeys = (Object.keys(bookingMeta) as BookingKey[]).filter((k) => present[k]);
+  const bookable = categories.filter((c) => c.items.length > 0);
   const [request, setRequest] = useState<BookingRequestRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [selected, setSelected] = useState<Record<BookingKey, boolean>>({
-    flight: present.flight,
-    hotel: present.hotel,
-    transfer: present.transfer,
-    fee: present.fee,
+  const [selected, setSelected] = useState<Record<CategoryKind, string | null>>({
+    flight: null, hotel: null, transfer: null, fee: null,
   });
 
   const load = useCallback(async () => {
     const { data: rows, error } = await supabase
       .from("booking_requests")
-      .select("id,status,created_at,include_flight,include_hotel,include_transfer,include_fee")
+      .select("id,status,created_at,include_flight,include_hotel,include_transfer,include_fee,selected_flight,selected_hotel,selected_transfer,selected_fee")
       .eq("quote_id", quoteId)
       .order("created_at", { ascending: false })
       .limit(1);
     if (error) {
       toast.error("Greška pri učitavanju zahtjeva za rezervaciju");
     } else {
-      setRequest((rows?.[0] as BookingRequestRow | undefined) ?? null);
+      setRequest((rows?.[0] as unknown as BookingRequestRow | undefined) ?? null);
     }
     setLoading(false);
   }, [quoteId]);
@@ -397,22 +456,33 @@ function BookingRequestCard({
     load();
   }, [load]);
 
-  const anySelected = availableKeys.some((k) => selected[k]);
+  const anySelected = bookable.some((c) => selected[c.kind] != null);
 
   async function handleSubmit() {
     setSubmitting(true);
     try {
+      const pickRaw = (kind: CategoryKind): Record<string, unknown> | null => {
+        const cat = bookable.find((c) => c.kind === kind);
+        const key = selected[kind];
+        if (!cat || key == null) return null;
+        return cat.items.find((i) => i.key === key)?.raw ?? null;
+      };
+      const selFlight = pickRaw("flight");
+      const selHotel = pickRaw("hotel");
+      const selTransfer = pickRaw("transfer");
+      const selFee = pickRaw("fee");
+
       const { error } = await supabase.from("booking_requests").insert({
         quote_id: quoteId,
-        include_flight: !!selected.flight && present.flight,
-        include_hotel: !!selected.hotel && present.hotel,
-        include_transfer: !!selected.transfer && present.transfer,
-        include_fee: !!selected.fee && present.fee,
-        selected_flight: selected.flight && present.flight ? (data.flight as Json) : null,
-        selected_hotel: selected.hotel && present.hotel ? (data.hotel as Json) : null,
-        selected_transfer: selected.transfer && present.transfer ? (data.transfer as Json) : null,
-        selected_fee: selected.fee && present.fee ? (data.fee as Json) : null,
-        requested_by_email: user?.email ?? null,
+        include_flight: !!selFlight,
+        include_hotel: !!selHotel,
+        include_transfer: !!selTransfer,
+        include_fee: !!selFee,
+        selected_flight: selFlight as unknown as Json,
+        selected_hotel: selHotel as unknown as Json,
+        selected_transfer: selTransfer as unknown as Json,
+        selected_fee: selFee as unknown as Json,
+        requested_by_email: userEmail,
       });
       if (error) throw new Error(error.message);
       toast.success("Zahtjev za rezervaciju poslan");
@@ -429,63 +499,104 @@ function BookingRequestCard({
   }
 
   if (request) {
-    const includedKeys = (Object.keys(bookingMeta) as BookingKey[]).filter(
-      (k) =>
-        request[`include_${k}` as "include_flight" | "include_hotel" | "include_transfer" | "include_fee"],
-    );
+    const rows: { kind: CategoryKind; raw: Record<string, unknown> | null }[] = ([
+      { kind: "flight", raw: request.selected_flight },
+      { kind: "hotel", raw: request.selected_hotel },
+      { kind: "transfer", raw: request.selected_transfer },
+      { kind: "fee", raw: request.selected_fee },
+    ] as { kind: CategoryKind; raw: Record<string, unknown> | null }[]).filter((r) => r.raw);
+
     return (
       <div className="rounded-2xl bg-card p-5 shadow-card">
         <h3 className="font-display text-sm font-semibold">Zahtjev za rezervaciju</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Zahtjev za rezervaciju poslan — Penta agent će ručno dovršiti rezervaciju.
+          Zahtjev za rezervaciju poslan — Penta agent će ručno dovršiti rezervaciju odabranih opcija.
         </p>
         <div className="mt-4 space-y-2">
-          {includedKeys.map((k) => {
-            const Icon = bookingMeta[k].icon;
+          {rows.map(({ kind, raw }) => {
+            const Icon = categoryMeta[kind].icon;
             return (
-              <div key={k} className="flex items-center gap-2 text-sm">
-                <Icon className="h-4 w-4 text-primary" strokeWidth={2.2} />
-                {bookingMeta[k].label}
+              <div key={kind} className="flex items-center gap-2 text-sm">
+                <Icon className="h-4 w-4 text-primary shrink-0" strokeWidth={2.2} />
+                <span>
+                  <span className="font-semibold">{categoryMeta[kind].label}:</span> {optionSummary(raw, kind)}
+                </span>
               </div>
             );
           })}
         </div>
         <div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground space-y-1">
-          <p>
-            <span className="font-semibold">Status:</span>{" "}
-            {bookingStatusLabels[request.status] ?? request.status}
-          </p>
-          <p>
-            <span className="font-semibold">Poslano:</span>{" "}
-            {new Date(request.created_at).toLocaleDateString("hr-HR")}
-          </p>
+          <p><span className="font-semibold">Status:</span> {bookingStatusLabels[request.status] ?? request.status}</p>
+          <p><span className="font-semibold">Poslano:</span> {new Date(request.created_at).toLocaleDateString("hr-HR")}</p>
         </div>
       </div>
     );
   }
 
-  if (availableKeys.length === 0) return null;
+  if (bookable.length === 0) return null;
 
   return (
     <div className="rounded-2xl bg-card p-5 shadow-card">
-      <h3 className="font-display text-sm font-semibold">Zahtjev za rezervaciju</h3>
+      <h3 className="font-display text-sm font-semibold">Odaberite opcije za rezervaciju</h3>
       <p className="mt-1 text-xs text-muted-foreground">
-        Odaberite stavke koje želite rezervirati. Penta agent zatim ručno dovršava rezervaciju.
+        Za svaku stavku odaberite točno jednu opciju koju želite rezervirati. Penta agent zatim ručno dovršava rezervaciju odabranog.
       </p>
-      <div className="mt-4 space-y-2">
-        {availableKeys.map((k) => {
-          const Icon = bookingMeta[k].icon;
+      <div className="mt-4 space-y-5">
+        {bookable.map((cat) => {
+          const Icon = cat.icon;
           return (
-            <label key={k} className="flex items-center gap-3 py-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                className="h-5 w-5 rounded accent-primary"
-                checked={!!selected[k]}
-                onChange={(e) => setSelected((s) => ({ ...s, [k]: e.target.checked }))}
-              />
-              <Icon className="h-4 w-4 text-primary" strokeWidth={2.2} />
-              <span className="text-sm font-medium">{bookingMeta[k].label}</span>
-            </label>
+            <div key={cat.kind}>
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                <Icon className="h-4 w-4 text-primary" strokeWidth={2.2} />
+                {cat.label}
+              </div>
+              <div className="space-y-2">
+                {cat.items.map((item) => (
+                  <label
+                    key={item.key}
+                    className={cn(
+                      "flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition",
+                      selected[cat.kind] === item.key ? "border-primary bg-gradient-brand-soft" : "border-border",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name={`option-${cat.kind}`}
+                      className="mt-1 h-4 w-4 accent-primary"
+                      checked={selected[cat.kind] === item.key}
+                      onChange={() => setSelected((s) => ({ ...s, [cat.kind]: item.key }))}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">
+                        {item.title}
+                        {item.recommended && (
+                          <span className="ml-2 inline-flex items-center gap-0.5 text-[10px] font-semibold text-gradient-brand uppercase tracking-wider">
+                            <Star className="h-3 w-3" /> Preporučeno
+                          </span>
+                        )}
+                      </p>
+                      {item.subtitle && <p className="text-xs text-muted-foreground">{item.subtitle}</p>}
+                    </div>
+                    {item.price !== undefined && <p className="font-display shrink-0 text-sm font-bold">{formatEur(item.price)}</p>}
+                  </label>
+                ))}
+                <label
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl border p-3 cursor-pointer text-sm text-muted-foreground transition",
+                    selected[cat.kind] === null ? "border-primary bg-secondary/50" : "border-border",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name={`option-${cat.kind}`}
+                    className="h-4 w-4 accent-primary"
+                    checked={selected[cat.kind] === null}
+                    onChange={() => setSelected((s) => ({ ...s, [cat.kind]: null }))}
+                  />
+                  Ne uključuj u rezervaciju
+                </label>
+              </div>
+            </div>
           );
         })}
       </div>
