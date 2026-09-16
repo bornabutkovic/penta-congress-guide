@@ -499,12 +499,12 @@ function FinalReservationCard({
   }
 
   if (request) {
-    const rows: { kind: CategoryKind; raw: Record<string, unknown> | null }[] = [
+    const rows: { kind: CategoryKind; raw: Record<string, unknown> | null }[] = ([
       { kind: "flight", raw: request.selected_flight },
       { kind: "hotel", raw: request.selected_hotel },
       { kind: "transfer", raw: request.selected_transfer },
       { kind: "fee", raw: request.selected_fee },
-    ].filter((r) => r.raw);
+    ] as { kind: CategoryKind; raw: Record<string, unknown> | null }[]).filter((r) => r.raw);
 
     return (
       <div className="rounded-2xl bg-card p-5 shadow-card">
