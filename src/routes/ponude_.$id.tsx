@@ -350,7 +350,7 @@ function QuoteDetailPage() {
       const selFee = pickRaw("fee");
 
       const { error } = await supabase.from("booking_requests").insert({
-        quote_id: quote.id,
+        quote_id: id,
         include_flight: !!selFlight,
         include_hotel: !!selHotel,
         include_transfer: !!selTransfer,
