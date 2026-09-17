@@ -859,6 +859,71 @@ export type Database = {
           },
         ]
       }
+      traveler_profiles: {
+        Row: {
+          account_id: string
+          created_at: string
+          date_of_birth: string | null
+          email: string | null
+          first_name: string
+          gender: string | null
+          id: string
+          is_default: boolean
+          last_name: string
+          notes: string | null
+          passport_country: string | null
+          passport_expiry: string | null
+          passport_number: string | null
+          phone_country_code: string | null
+          phone_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          first_name: string
+          gender?: string | null
+          id?: string
+          is_default?: boolean
+          last_name: string
+          notes?: string | null
+          passport_country?: string | null
+          passport_expiry?: string | null
+          passport_number?: string | null
+          phone_country_code?: string | null
+          phone_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          first_name?: string
+          gender?: string | null
+          id?: string
+          is_default?: boolean
+          last_name?: string
+          notes?: string | null
+          passport_country?: string | null
+          passport_expiry?: string | null
+          passport_number?: string | null
+          phone_country_code?: string | null
+          phone_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "traveler_profiles_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           auth_user_id: string | null
@@ -907,6 +972,33 @@ export type Database = {
       get_applicable_travel_policy: {
         Args: { p_company_id: string; p_traveler_type: string }
         Returns: Json
+      }
+      get_traveler_profile_by_email: {
+        Args: { p_email: string }
+        Returns: {
+          account_id: string
+          created_at: string
+          date_of_birth: string | null
+          email: string | null
+          first_name: string
+          gender: string | null
+          id: string
+          is_default: boolean
+          last_name: string
+          notes: string | null
+          passport_country: string | null
+          passport_expiry: string | null
+          passport_number: string | null
+          phone_country_code: string | null
+          phone_number: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "traveler_profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       match_4star_hotels: { Args: { candidates: Json }; Returns: Json }
       match_hotels_by_stars: {
