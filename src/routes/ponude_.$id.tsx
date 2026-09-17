@@ -180,12 +180,47 @@ function buildCategoryView(kind: CategoryKind, data: Record<string, unknown>): C
   };
 }
 
+const bookingStatusLabels: Record<string, string> = {
+  requested: "Zahtjev poslan — čeka ručnu rezervaciju",
+  manually_booked: "Rezervirano",
+  cancelled: "Zahtjev otkazan",
+};
+
+interface BookingRequestRow {
+  id: string;
+  status: string;
+  created_at: string;
+  include_flight: boolean;
+  include_hotel: boolean;
+  include_transfer: boolean;
+  include_fee: boolean;
+  selected_flight: Record<string, unknown> | null;
+  selected_hotel: Record<string, unknown> | null;
+  selected_transfer: Record<string, unknown> | null;
+  selected_fee: Record<string, unknown> | null;
+}
+
+function optionSummary(raw: Record<string, unknown> | null | undefined, kind: CategoryKind): string {
+  if (!raw) return "";
+  if (kind === "flight") return `${raw.airline ?? ""} — ${formatEur(num(raw.price_total) ?? 0)}`;
+  if (kind === "hotel") return `${raw.ratehawk_confirmed_name ?? raw.room_name ?? ""} — ${formatEur(num(raw.price) ?? 0)}`;
+  if (kind === "transfer") return `${raw.vehicle ?? ""} — ${formatEur(num(raw.price_total) ?? num(raw.price_per_direction) ?? 0)}`;
+  return `${raw.type ?? ""} — ${formatEur(num(raw.price) ?? 0)}`;
+}
+
 function QuoteDetailPage() {
   const { id } = Route.useParams();
   const { user } = useAuth();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [bookingRequest, setBookingRequest] = useState<BookingRequestRow | null>(null);
+  const [bookingLoading, setBookingLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [selected, setSelected] = useState<Record<CategoryKind, string | null>>({
+    flight: null, hotel: null, transfer: null, fee: null,
+  });
 
   const fetchQuote = useCallback(async () => {
     const { data, error } = await supabase
@@ -198,10 +233,30 @@ function QuoteDetailPage() {
     setLoading(false);
   }, [id]);
 
+  const fetchBookingRequest = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("booking_requests")
+      .select("id,status,created_at,include_flight,include_hotel,include_transfer,include_fee,selected_flight,selected_hotel,selected_transfer,selected_fee")
+      .eq("quote_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (error) {
+      toast.error("Greška pri učitavanju zahtjeva za rezervaciju");
+    } else {
+      setBookingRequest((data?.[0] as unknown as BookingRequestRow | undefined) ?? null);
+    }
+    setBookingLoading(false);
+  }, [id]);
+
   useEffect(() => {
     setLoading(true);
     fetchQuote();
   }, [fetchQuote]);
+
+  useEffect(() => {
+    setBookingLoading(true);
+    fetchBookingRequest();
+  }, [fetchBookingRequest]);
 
   if (loading) {
     return (
@@ -261,6 +316,61 @@ function QuoteDetailPage() {
     buildCategoryView("fee", feeData),
   ].filter((c) => c.visible);
 
+  const bookable = categories.filter((c) => c.items.length > 0);
+  const hasExistingRequest = !!bookingRequest;
+  const anySelected = bookable.some((c) => selected[c.kind] != null);
+
+  const selectedTotal = bookable.reduce((sum, c) => {
+    const key = selected[c.kind];
+    if (key == null) return sum;
+    const item = c.items.find((i) => i.key === key);
+    return sum + (item?.price ?? 0);
+  }, 0);
+
+  const displayTotal = !hasExistingRequest && anySelected
+    ? selectedTotal
+    : (quote.total_price ? Number(quote.total_price) : undefined);
+
+  const totalCaption = !hasExistingRequest && anySelected
+    ? "Zbroj odabranih stavki za rezervaciju"
+    : "Uključuje sve stavke ponude";
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    try {
+      const pickRaw = (kind: CategoryKind): Record<string, unknown> | null => {
+        const cat = bookable.find((c) => c.kind === kind);
+        const key = selected[kind];
+        if (!cat || key == null) return null;
+        return cat.items.find((i) => i.key === key)?.raw ?? null;
+      };
+      const selFlight = pickRaw("flight");
+      const selHotel = pickRaw("hotel");
+      const selTransfer = pickRaw("transfer");
+      const selFee = pickRaw("fee");
+
+      const { error } = await supabase.from("booking_requests").insert({
+        quote_id: id,
+        include_flight: !!selFlight,
+        include_hotel: !!selHotel,
+        include_transfer: !!selTransfer,
+        include_fee: !!selFee,
+        selected_flight: selFlight as unknown as Json,
+        selected_hotel: selHotel as unknown as Json,
+        selected_transfer: selTransfer as unknown as Json,
+        selected_fee: selFee as unknown as Json,
+        requested_by_email: user?.email ?? null,
+      });
+      if (error) throw new Error(error.message);
+      toast.success("Zahtjev za rezervaciju poslan");
+      await fetchBookingRequest();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Greška pri slanju zahtjeva");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <MobileFrame>
       <PageHeader title="Detalji ponude" />
@@ -288,16 +398,18 @@ function QuoteDetailPage() {
           <div className="mt-5 rounded-2xl bg-card p-4 shadow-card">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ukupno</p>
             <p className="font-display mt-1 text-3xl font-bold text-gradient-brand">
-              {quote.total_price ? formatEur(Number(quote.total_price)) : "Na upit"}
+              {displayTotal !== undefined ? formatEur(displayTotal) : "Na upit"}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">Uključuje sve stavke ponude</p>
+            <p className="mt-1 text-xs text-muted-foreground">{totalCaption}</p>
           </div>
         </div>
 
         <div className="px-5 mt-4">
           <h3 className="font-display mb-3 text-sm font-semibold">Stavke ponude</h3>
           <p className="mb-3 text-xs text-muted-foreground">
-            Prikazane su samo stavke koje su tražene u zahtjevu. Odaberite po jednu opciju za svaku stavku koju želite poslati na rezervaciju.
+            {hasExistingRequest
+              ? "Prikazane su stavke koje su tražene u zahtjevu."
+              : "Prikazane su samo stavke koje su tražene u zahtjevu. Odaberite po jednu opciju za svaku stavku koju želite poslati na rezervaciju."}
           </p>
         </div>
 
@@ -308,7 +420,13 @@ function QuoteDetailPage() {
             </div>
           )}
           {categories.map((cat) => (
-            <CategorySection key={cat.kind} category={cat} />
+            <CategorySection
+              key={cat.kind}
+              category={cat}
+              selectable={!hasExistingRequest && cat.items.length > 0}
+              selectedKey={selected[cat.kind]}
+              onSelect={(key) => setSelected((s) => ({ ...s, [cat.kind]: key }))}
+            />
           ))}
         </div>
 
@@ -339,15 +457,32 @@ function QuoteDetailPage() {
         </div>
 
         <div className="px-5 mb-8">
-          <FinalReservationCard quoteId={quote.id} categories={categories} userEmail={user?.email ?? null} />
+          <ReservationSummary
+            bookingLoading={bookingLoading}
+            bookingRequest={bookingRequest}
+            bookable={bookable}
+            anySelected={anySelected}
+            submitting={submitting}
+            onSubmit={handleSubmit}
+          />
         </div>
       </div>
     </MobileFrame>
   );
 }
 
-function CategorySection({ category }: { category: CategoryView }) {
-  const [open, setOpen] = useState(false);
+function CategorySection({
+  category,
+  selectable = false,
+  selectedKey = null,
+  onSelect,
+}: {
+  category: CategoryView;
+  selectable?: boolean;
+  selectedKey?: string | null;
+  onSelect?: (key: string | null) => void;
+}) {
+  const [open, setOpen] = useState(selectable);
   const Icon = category.icon;
   const count = category.items.length;
 
@@ -368,10 +503,23 @@ function CategorySection({ category }: { category: CategoryView }) {
           {category.items.length === 0 && (
             <p className="text-sm text-amber-600">{category.emptyMessage}</p>
           )}
-          {category.items.map((item) => (
-            <div key={item.key} className="rounded-xl border border-border p-3 text-sm">
-              <div className="flex items-start justify-between gap-2">
-                <div>
+          {category.items.map((item) =>
+            selectable ? (
+              <label
+                key={item.key}
+                className={cn(
+                  "flex items-start gap-3 rounded-xl border p-3 text-sm cursor-pointer transition",
+                  selectedKey === item.key ? "border-primary bg-gradient-brand-soft" : "border-border",
+                )}
+              >
+                <input
+                  type="radio"
+                  name={`option-${category.kind}`}
+                  className="mt-1 h-4 w-4 accent-primary"
+                  checked={selectedKey === item.key}
+                  onChange={() => onSelect?.(item.key)}
+                />
+                <div className="min-w-0 flex-1">
                   <p className="font-semibold">
                     {item.title}
                     {item.recommended && (
@@ -383,127 +531,74 @@ function CategorySection({ category }: { category: CategoryView }) {
                   {item.subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{item.subtitle}</p>}
                 </div>
                 {item.price !== undefined && <p className="font-display shrink-0 font-bold">{formatEur(item.price)}</p>}
+              </label>
+            ) : (
+              <div key={item.key} className="rounded-xl border border-border p-3 text-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-semibold">
+                      {item.title}
+                      {item.recommended && (
+                        <span className="ml-2 inline-flex items-center gap-0.5 text-[10px] font-semibold text-gradient-brand uppercase tracking-wider">
+                          <Star className="h-3 w-3" /> Preporučeno
+                        </span>
+                      )}
+                    </p>
+                    {item.subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{item.subtitle}</p>}
+                  </div>
+                  {item.price !== undefined && <p className="font-display shrink-0 font-bold">{formatEur(item.price)}</p>}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          )}
+          {selectable && category.items.length > 0 && (
+            <label
+              className={cn(
+                "flex items-center gap-3 rounded-xl border p-3 cursor-pointer text-sm text-muted-foreground transition",
+                selectedKey === null ? "border-primary bg-secondary/50" : "border-border",
+              )}
+            >
+              <input
+                type="radio"
+                name={`option-${category.kind}`}
+                className="h-4 w-4 accent-primary"
+                checked={selectedKey === null}
+                onChange={() => onSelect?.(null)}
+              />
+              Ne uključuj u rezervaciju
+            </label>
+          )}
         </div>
       </motion.div>
     </div>
   );
 }
 
-const bookingStatusLabels: Record<string, string> = {
-  requested: "Zahtjev poslan — čeka ručnu rezervaciju",
-  manually_booked: "Rezervirano",
-  cancelled: "Zahtjev otkazan",
-};
-
-interface BookingRequestRow {
-  id: string;
-  status: string;
-  created_at: string;
-  include_flight: boolean;
-  include_hotel: boolean;
-  include_transfer: boolean;
-  include_fee: boolean;
-  selected_flight: Record<string, unknown> | null;
-  selected_hotel: Record<string, unknown> | null;
-  selected_transfer: Record<string, unknown> | null;
-  selected_fee: Record<string, unknown> | null;
-}
-
-function optionSummary(raw: Record<string, unknown> | null | undefined, kind: CategoryKind): string {
-  if (!raw) return "";
-  if (kind === "flight") return `${raw.airline ?? ""} — ${formatEur(num(raw.price_total) ?? 0)}`;
-  if (kind === "hotel") return `${raw.ratehawk_confirmed_name ?? raw.room_name ?? ""} — ${formatEur(num(raw.price) ?? 0)}`;
-  if (kind === "transfer") return `${raw.vehicle ?? ""} — ${formatEur(num(raw.price_total) ?? num(raw.price_per_direction) ?? 0)}`;
-  return `${raw.type ?? ""} — ${formatEur(num(raw.price) ?? 0)}`;
-}
-
-function FinalReservationCard({
-  quoteId,
-  categories,
-  userEmail,
+function ReservationSummary({
+  bookingLoading,
+  bookingRequest,
+  bookable,
+  anySelected,
+  submitting,
+  onSubmit,
 }: {
-  quoteId: string;
-  categories: CategoryView[];
-  userEmail: string | null;
+  bookingLoading: boolean;
+  bookingRequest: BookingRequestRow | null;
+  bookable: CategoryView[];
+  anySelected: boolean;
+  submitting: boolean;
+  onSubmit: () => void;
 }) {
-  const bookable = categories.filter((c) => c.items.length > 0);
-  const [request, setRequest] = useState<BookingRequestRow | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [selected, setSelected] = useState<Record<CategoryKind, string | null>>({
-    flight: null, hotel: null, transfer: null, fee: null,
-  });
-
-  const load = useCallback(async () => {
-    const { data: rows, error } = await supabase
-      .from("booking_requests")
-      .select("id,status,created_at,include_flight,include_hotel,include_transfer,include_fee,selected_flight,selected_hotel,selected_transfer,selected_fee")
-      .eq("quote_id", quoteId)
-      .order("created_at", { ascending: false })
-      .limit(1);
-    if (error) {
-      toast.error("Greška pri učitavanju zahtjeva za rezervaciju");
-    } else {
-      setRequest((rows?.[0] as unknown as BookingRequestRow | undefined) ?? null);
-    }
-    setLoading(false);
-  }, [quoteId]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const anySelected = bookable.some((c) => selected[c.kind] != null);
-
-  async function handleSubmit() {
-    setSubmitting(true);
-    try {
-      const pickRaw = (kind: CategoryKind): Record<string, unknown> | null => {
-        const cat = bookable.find((c) => c.kind === kind);
-        const key = selected[kind];
-        if (!cat || key == null) return null;
-        return cat.items.find((i) => i.key === key)?.raw ?? null;
-      };
-      const selFlight = pickRaw("flight");
-      const selHotel = pickRaw("hotel");
-      const selTransfer = pickRaw("transfer");
-      const selFee = pickRaw("fee");
-
-      const { error } = await supabase.from("booking_requests").insert({
-        quote_id: quoteId,
-        include_flight: !!selFlight,
-        include_hotel: !!selHotel,
-        include_transfer: !!selTransfer,
-        include_fee: !!selFee,
-        selected_flight: selFlight as unknown as Json,
-        selected_hotel: selHotel as unknown as Json,
-        selected_transfer: selTransfer as unknown as Json,
-        selected_fee: selFee as unknown as Json,
-        requested_by_email: userEmail,
-      });
-      if (error) throw new Error(error.message);
-      toast.success("Zahtjev za rezervaciju poslan");
-      await load();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Greška pri slanju zahtjeva");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  if (loading) {
+  if (bookingLoading) {
     return <Skeleton className="h-28 w-full rounded-2xl" />;
   }
 
-  if (request) {
+  if (bookingRequest) {
     const rows: { kind: CategoryKind; raw: Record<string, unknown> | null }[] = ([
-      { kind: "flight", raw: request.selected_flight },
-      { kind: "hotel", raw: request.selected_hotel },
-      { kind: "transfer", raw: request.selected_transfer },
-      { kind: "fee", raw: request.selected_fee },
+      { kind: "flight", raw: bookingRequest.selected_flight },
+      { kind: "hotel", raw: bookingRequest.selected_hotel },
+      { kind: "transfer", raw: bookingRequest.selected_transfer },
+      { kind: "fee", raw: bookingRequest.selected_fee },
     ] as { kind: CategoryKind; raw: Record<string, unknown> | null }[]).filter((r) => r.raw);
 
     return (
@@ -526,8 +621,8 @@ function FinalReservationCard({
           })}
         </div>
         <div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground space-y-1">
-          <p><span className="font-semibold">Status:</span> {bookingStatusLabels[request.status] ?? request.status}</p>
-          <p><span className="font-semibold">Poslano:</span> {new Date(request.created_at).toLocaleDateString("hr-HR")}</p>
+          <p><span className="font-semibold">Status:</span> {bookingStatusLabels[bookingRequest.status] ?? bookingRequest.status}</p>
+          <p><span className="font-semibold">Poslano:</span> {new Date(bookingRequest.created_at).toLocaleDateString("hr-HR")}</p>
         </div>
       </div>
     );
@@ -537,74 +632,15 @@ function FinalReservationCard({
 
   return (
     <div className="rounded-2xl bg-card p-5 shadow-card">
-      <h3 className="font-display text-sm font-semibold">Odaberite opcije za rezervaciju</h3>
+      <h3 className="font-display text-sm font-semibold">Pošaljite zahtjev za rezervaciju</h3>
       <p className="mt-1 text-xs text-muted-foreground">
-        Za svaku stavku odaberite točno jednu opciju koju želite rezervirati. Penta agent zatim ručno dovršava rezervaciju odabranog.
+        Odabir opcija radite gore, u sekciji "Stavke ponude". Kad ste zadovoljni odabirom, pošaljite zahtjev — Penta agent zatim ručno dovršava rezervaciju odabranog.
       </p>
-      <div className="mt-4 space-y-5">
-        {bookable.map((cat) => {
-          const Icon = cat.icon;
-          return (
-            <div key={cat.kind}>
-              <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                <Icon className="h-4 w-4 text-primary" strokeWidth={2.2} />
-                {cat.label}
-              </div>
-              <div className="space-y-2">
-                {cat.items.map((item) => (
-                  <label
-                    key={item.key}
-                    className={cn(
-                      "flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition",
-                      selected[cat.kind] === item.key ? "border-primary bg-gradient-brand-soft" : "border-border",
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name={`option-${cat.kind}`}
-                      className="mt-1 h-4 w-4 accent-primary"
-                      checked={selected[cat.kind] === item.key}
-                      onChange={() => setSelected((s) => ({ ...s, [cat.kind]: item.key }))}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">
-                        {item.title}
-                        {item.recommended && (
-                          <span className="ml-2 inline-flex items-center gap-0.5 text-[10px] font-semibold text-gradient-brand uppercase tracking-wider">
-                            <Star className="h-3 w-3" /> Preporučeno
-                          </span>
-                        )}
-                      </p>
-                      {item.subtitle && <p className="text-xs text-muted-foreground">{item.subtitle}</p>}
-                    </div>
-                    {item.price !== undefined && <p className="font-display shrink-0 text-sm font-bold">{formatEur(item.price)}</p>}
-                  </label>
-                ))}
-                <label
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl border p-3 cursor-pointer text-sm text-muted-foreground transition",
-                    selected[cat.kind] === null ? "border-primary bg-secondary/50" : "border-border",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name={`option-${cat.kind}`}
-                    className="h-4 w-4 accent-primary"
-                    checked={selected[cat.kind] === null}
-                    onChange={() => setSelected((s) => ({ ...s, [cat.kind]: null }))}
-                  />
-                  Ne uključuj u rezervaciju
-                </label>
-              </div>
-            </div>
-          );
-        })}
-      </div>
       <button
-        onClick={handleSubmit}
+        onClick={onSubmit}
         disabled={submitting || !anySelected}
         className={cn(
-          "mt-5 w-full h-12 rounded-xl bg-gradient-brand text-primary-foreground text-sm font-semibold shadow-elevated flex items-center justify-center gap-2 active:scale-[0.99] transition",
+          "mt-4 w-full h-12 rounded-xl bg-gradient-brand text-primary-foreground text-sm font-semibold shadow-elevated flex items-center justify-center gap-2 active:scale-[0.99] transition",
           (submitting || !anySelected) && "opacity-60 cursor-not-allowed",
         )}
       >
