@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MobileFrame } from "@/components/MobileFrame";
@@ -10,10 +10,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/nova-ponuda")({
   head: () => ({
     meta: [
-      { title: "Nova ponuda | PICCARD³" },
-      { name: "description", content: "Kreiraj novu kongresnu ponudu." },
-      { property: "og:title", content: "Nova ponuda | PICCARD³" },
-      { property: "og:description", content: "Kreirajte novu ponudu za kongresno putovanje." },
+      { title: "New proposal | PICCARD³" },
+      { name: "description", content: "Create a new congress travel proposal." },
+      { property: "og:title", content: "New proposal | PICCARD³" },
+      { property: "og:description", content: "Create a new proposal for congress travel." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://penta-travel.lovable.app/nova-ponuda" },
       { name: "twitter:card", content: "summary" },
@@ -25,7 +25,8 @@ export const Route = createFileRoute("/nova-ponuda")({
 
 const WEBHOOK_URL = "https://penta.app.n8n.cloud/webhook/form-intake";
 
-type CabinClass = "economy" | "business";
+type CabinClass = "economy" | "premium_economy" | "business" | "first";
+type TimeWindow = "all_day" | "morning" | "afternoon";
 
 interface FormState {
   client_name: string;
@@ -36,7 +37,11 @@ interface FormState {
   destination_city: string;
   origin_city: string;
   pax_count: number;
+  rooms: string;
   cabin_class: CabinClass;
+  departure_time_window: TimeWindow;
+  return_time_window: TimeWindow;
+  checked_baggage: boolean;
   checkin: string;
   checkout: string;
   flight_needed: boolean;
@@ -45,6 +50,7 @@ interface FormState {
   transfer_address: string;
   destination_transfer_needed: boolean;
   fee_needed: boolean;
+  hotel_id_override: string;
 }
 
 const initialState: FormState = {
@@ -56,7 +62,11 @@ const initialState: FormState = {
   destination_city: "",
   origin_city: "",
   pax_count: 1,
+  rooms: "",
   cabin_class: "economy",
+  departure_time_window: "all_day",
+  return_time_window: "all_day",
+  checked_baggage: true,
   checkin: "",
   checkout: "",
   flight_needed: true,
@@ -65,6 +75,7 @@ const initialState: FormState = {
   transfer_address: "",
   destination_transfer_needed: true,
   fee_needed: true,
+  hotel_id_override: "",
 };
 
 type Errors = Partial<Record<keyof FormState, string>>;
@@ -99,6 +110,12 @@ function NovaPonudaPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [certMode, setCertMode] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setCertMode(params.get("cert") === "1");
+  }, []);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => {
@@ -115,24 +132,30 @@ function NovaPonudaPage() {
 
   function validate(): boolean {
     const e: Errors = {};
-    if (!form.client_name.trim()) e.client_name = "Obavezno polje";
-    if (!form.client_email.trim()) e.client_email = "Obavezno polje";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.client_email)) e.client_email = "Neispravan email";
-    if (!form.client_phone.trim()) e.client_phone = "Obavezno polje";
+    if (!form.client_name.trim()) e.client_name = "Required field";
+    if (!form.client_email.trim()) e.client_email = "Required field";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.client_email)) e.client_email = "Invalid email";
+    if (!form.client_phone.trim()) e.client_phone = "Required field";
     if (form.congress_needed) {
-      if (!form.congress.trim()) e.congress = "Obavezno polje";
+      if (!form.congress.trim()) e.congress = "Required field";
     } else if (!form.destination_city.trim()) {
-      e.destination_city = "Obavezno polje";
+      e.destination_city = "Required field";
     }
-    if (form.flight_needed && !form.origin_city.trim()) e.origin_city = "Obavezno polje";
-    if (!form.pax_count || form.pax_count < 1 || form.pax_count > 20) e.pax_count = "Broj putnika 1-20";
-    if (!form.checkin) e.checkin = "Obavezno polje";
-    if (!form.checkout) e.checkout = "Obavezno polje";
+    if (form.flight_needed && !form.origin_city.trim()) e.origin_city = "Required field";
+    if (!form.pax_count || form.pax_count < 1 || form.pax_count > 20) e.pax_count = "Number of guests 1-20";
+    if (form.hotel_needed && form.rooms.trim()) {
+      const rooms = Number(form.rooms);
+      if (!Number.isInteger(rooms) || rooms < 1 || rooms > Number(form.pax_count)) {
+        e.rooms = "Rooms cannot exceed the number of guests";
+      }
+    }
+    if (!form.checkin) e.checkin = "Required field";
+    if (!form.checkout) e.checkout = "Required field";
     if (form.checkin && form.checkout && form.checkout <= form.checkin) {
-      e.checkout = "Datum odlaska mora biti nakon dolaska";
+      e.checkout = "Check-out must be after check-in";
     }
     if (form.transfer_needed && !form.transfer_address.trim()) {
-      e.transfer_address = "Obavezno polje";
+      e.transfer_address = "Required field";
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -159,7 +182,11 @@ function NovaPonudaPage() {
           destination_city: form.congress_needed ? "" : form.destination_city.trim(),
           origin_city: form.flight_needed ? form.origin_city.trim() : "",
           pax_count: Number(form.pax_count),
-          cabin_class: form.cabin_class,
+          rooms: form.hotel_needed && form.rooms.trim() ? Number(form.rooms) : null,
+          cabin_class: form.flight_needed ? form.cabin_class : "economy",
+          departure_time_window: form.flight_needed ? form.departure_time_window : "all_day",
+          return_time_window: form.flight_needed ? form.return_time_window : "all_day",
+          checked_baggage: form.flight_needed ? form.checked_baggage : true,
           checkin: form.checkin,
           checkout: form.checkout,
           flight_needed: form.flight_needed,
@@ -168,12 +195,13 @@ function NovaPonudaPage() {
           transfer_address: form.transfer_needed ? form.transfer_address.trim() : null,
           destination_transfer_needed: form.hotel_needed ? form.destination_transfer_needed : false,
           fee_needed: form.congress_needed ? form.fee_needed : false,
+          hotel_id_override: certMode ? form.hotel_id_override.trim() : "",
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setSuccess(form.client_email.trim());
     } catch {
-      setSubmitError("Greška pri slanju. Pokušajte ponovo.");
+      setSubmitError("Sending failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -188,22 +216,22 @@ function NovaPonudaPage() {
 
   return (
     <MobileFrame>
-      <PageHeader title="Nova ponuda" back={false} />
+      <PageHeader title="New proposal" back={false} />
       <div className="flex-1 min-h-0 overflow-y-auto bg-surface px-5 py-4">
         {success ? (
           <div className="mt-8 rounded-2xl bg-card p-6 shadow-card text-center">
             <div className="mx-auto h-16 w-16 rounded-full bg-gradient-brand-soft flex items-center justify-center">
               <CheckCircle2 className="h-10 w-10 text-primary" />
             </div>
-            <h2 className="font-display mt-4 text-lg font-bold">Zahtjev je primljen!</h2>
+            <h2 className="font-display mt-4 text-lg font-bold">Request received!</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Ponuda će biti pripremljena i poslana na {success}
+              The proposal will be prepared and sent to {success}
             </p>
             <button
               onClick={resetForm}
               className="mt-6 w-full h-11 rounded-xl border border-border bg-card text-sm font-semibold active:scale-[0.99]"
             >
-              Nova ponuda
+              New proposal
             </button>
           </div>
         ) : (
@@ -214,10 +242,10 @@ function NovaPonudaPage() {
               </div>
             )}
 
-            <SectionLabel>Klijent</SectionLabel>
+            <SectionLabel>Client</SectionLabel>
             <div className="space-y-3">
               <div>
-                <FieldLabel htmlFor="client_name">Ime i prezime</FieldLabel>
+                <FieldLabel htmlFor="client_name">Full name</FieldLabel>
                 <input
                   id="client_name"
                   type="text"
@@ -239,7 +267,7 @@ function NovaPonudaPage() {
                 <ErrorText msg={errors.client_email} />
               </div>
               <div>
-                <FieldLabel htmlFor="client_phone">Telefon</FieldLabel>
+                <FieldLabel htmlFor="client_phone">Phone</FieldLabel>
                 <input
                   id="client_phone"
                   type="tel"
@@ -251,11 +279,11 @@ function NovaPonudaPage() {
               </div>
             </div>
 
-            <SectionLabel>Usluge</SectionLabel>
+            <SectionLabel>Services</SectionLabel>
             <div className="space-y-2 rounded-2xl bg-card p-4 shadow-card">
               {([
-                ["congress_needed", "Kongres"],
-                ["flight_needed", "Let"],
+                ["congress_needed", "Congress"],
+                ["flight_needed", "Flight"],
                 ["hotel_needed", "Hotel"],
               ] as const).map(([key, label]) => (
                 <label key={key} className="flex items-center gap-3 py-1.5 cursor-pointer">
@@ -285,7 +313,7 @@ function NovaPonudaPage() {
                         checked={form.fee_needed}
                         onChange={(e) => update("fee_needed", e.target.checked)}
                       />
-                      <span className="text-sm font-medium">Kotizacija</span>
+                      <span className="text-sm font-medium">Registration fee</span>
                     </label>
                   </motion.div>
                 )}
@@ -305,7 +333,7 @@ function NovaPonudaPage() {
                         checked={form.transfer_needed}
                         onChange={(e) => update("transfer_needed", e.target.checked)}
                       />
-                      <span className="text-sm font-medium">Transfer kućna adresa → aerodrom</span>
+                      <span className="text-sm font-medium">Transfer: home address → airport</span>
                     </label>
                   </motion.div>
                 )}
@@ -325,7 +353,7 @@ function NovaPonudaPage() {
                         checked={form.destination_transfer_needed}
                         onChange={(e) => update("destination_transfer_needed", e.target.checked)}
                       />
-                      <span className="text-sm font-medium">Transfer aerodrom → hotel (destinacija)</span>
+                      <span className="text-sm font-medium">Transfer: airport → hotel (destination)</span>
                     </label>
                   </motion.div>
                 )}
@@ -343,11 +371,11 @@ function NovaPonudaPage() {
                   className="overflow-hidden"
                 >
                   <div className="pt-3">
-                    <FieldLabel htmlFor="transfer_address">Adresa polaska</FieldLabel>
+                    <FieldLabel htmlFor="transfer_address">Departure address</FieldLabel>
                     <input
                       id="transfer_address"
                       type="text"
-                      placeholder="npr. Ilica 42, Zagreb"
+                      placeholder="e.g. Ilica 42, Zagreb"
                       className={inputClass}
                       value={form.transfer_address}
                       onChange={(e) => update("transfer_address", e.target.value)}
@@ -358,15 +386,15 @@ function NovaPonudaPage() {
               )}
             </AnimatePresence>
 
-            <SectionLabel>{form.congress_needed ? "Kongres" : "Destinacija"}</SectionLabel>
+            <SectionLabel>{form.congress_needed ? "Congress" : "Destination"}</SectionLabel>
             <div className="space-y-3">
               {form.congress_needed ? (
                 <div>
-                  <FieldLabel htmlFor="congress">Naziv kongresa</FieldLabel>
+                  <FieldLabel htmlFor="congress">Congress name</FieldLabel>
                   <input
                     id="congress"
                     type="text"
-                    placeholder="npr. ESC Congress 2026"
+                    placeholder="e.g. ESC Congress 2026"
                     className={inputClass}
                     value={form.congress}
                     onChange={(e) => update("congress", e.target.value)}
@@ -375,11 +403,11 @@ function NovaPonudaPage() {
                 </div>
               ) : (
                 <div>
-                  <FieldLabel htmlFor="destination_city">Grad</FieldLabel>
+                  <FieldLabel htmlFor="destination_city">City</FieldLabel>
                   <input
                     id="destination_city"
                     type="text"
-                    placeholder="npr. Beč"
+                    placeholder="e.g. Vienna"
                     className={inputClass}
                     value={form.destination_city}
                     onChange={(e) => update("destination_city", e.target.value)}
@@ -398,11 +426,11 @@ function NovaPonudaPage() {
                     className="overflow-hidden"
                   >
                     <div>
-                      <FieldLabel htmlFor="origin_city">Grad polaska</FieldLabel>
+                      <FieldLabel htmlFor="origin_city">Departure city</FieldLabel>
                       <input
                         id="origin_city"
                         type="text"
-                        placeholder="npr. Zagreb"
+                        placeholder="e.g. Zagreb"
                         className={inputClass}
                         value={form.origin_city}
                         onChange={(e) => update("origin_city", e.target.value)}
@@ -414,11 +442,11 @@ function NovaPonudaPage() {
               </AnimatePresence>
             </div>
 
-            <SectionLabel>Putovanje</SectionLabel>
+            <SectionLabel>Trip</SectionLabel>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <FieldLabel htmlFor="pax_count">Broj putnika</FieldLabel>
+                  <FieldLabel htmlFor="pax_count">Number of guests</FieldLabel>
                   <input
                     id="pax_count"
                     type="number"
@@ -430,21 +458,91 @@ function NovaPonudaPage() {
                   />
                   <ErrorText msg={errors.pax_count} />
                 </div>
-                <div>
-                  <FieldLabel htmlFor="cabin_class">Klasa</FieldLabel>
-                  <select
-                    id="cabin_class"
-                    className={inputClass}
-                    value={form.cabin_class}
-                    onChange={(e) => update("cabin_class", e.target.value as CabinClass)}
-                  >
-                    <option value="economy">Economy</option>
-                    <option value="business">Business</option>
-                  </select>
-                </div>
+                {form.hotel_needed && (
+                  <div>
+                    <FieldLabel htmlFor="rooms">Number of rooms</FieldLabel>
+                    <input
+                      id="rooms"
+                      type="number"
+                      min={1}
+                      max={form.pax_count || 1}
+                      placeholder="Default: one room per guest"
+                      className={inputClass}
+                      value={form.rooms}
+                      onChange={(e) => update("rooms", e.target.value)}
+                    />
+                    <ErrorText msg={errors.rooms} />
+                  </div>
+                )}
               </div>
+              <AnimatePresence initial={false}>
+                {form.flight_needed && (
+                  <motion.div
+                    key="flight_preferences"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="space-y-3">
+                      <div>
+                        <FieldLabel htmlFor="cabin_class">Cabin class</FieldLabel>
+                        <select
+                          id="cabin_class"
+                          className={inputClass}
+                          value={form.cabin_class}
+                          onChange={(e) => update("cabin_class", e.target.value as CabinClass)}
+                        >
+                          <option value="economy">Economy</option>
+                          <option value="premium_economy">Premium Economy</option>
+                          <option value="business">Business</option>
+                          <option value="first">First</option>
+                        </select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <FieldLabel htmlFor="departure_time_window">Departure time</FieldLabel>
+                          <select
+                            id="departure_time_window"
+                            className={inputClass}
+                            value={form.departure_time_window}
+                            onChange={(e) => update("departure_time_window", e.target.value as TimeWindow)}
+                          >
+                            <option value="all_day">All day</option>
+                            <option value="morning">Morning</option>
+                            <option value="afternoon">Afternoon</option>
+                          </select>
+                        </div>
+                        <div>
+                          <FieldLabel htmlFor="return_time_window">Return time</FieldLabel>
+                          <select
+                            id="return_time_window"
+                            className={inputClass}
+                            value={form.return_time_window}
+                            onChange={(e) => update("return_time_window", e.target.value as TimeWindow)}
+                          >
+                            <option value="all_day">All day</option>
+                            <option value="morning">Morning</option>
+                            <option value="afternoon">Afternoon</option>
+                          </select>
+                        </div>
+                      </div>
+                      <label className="flex items-center gap-3 rounded-xl bg-card py-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded accent-primary"
+                          checked={form.checked_baggage}
+                          onChange={(e) => update("checked_baggage", e.target.checked)}
+                        />
+                        <span className="text-sm font-medium">Checked baggage required</span>
+                      </label>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <div>
-                <FieldLabel htmlFor="checkin">Datum dolaska (check-in)</FieldLabel>
+                <FieldLabel htmlFor="checkin">Check-in date</FieldLabel>
                 <input
                   id="checkin"
                   type="date"
@@ -455,7 +553,7 @@ function NovaPonudaPage() {
                 <ErrorText msg={errors.checkin} />
               </div>
               <div>
-                <FieldLabel htmlFor="checkout">Datum odlaska (check-out)</FieldLabel>
+                <FieldLabel htmlFor="checkout">Check-out date</FieldLabel>
                 <input
                   id="checkout"
                   type="date"
@@ -465,8 +563,26 @@ function NovaPonudaPage() {
                 />
                 <ErrorText msg={errors.checkout} />
               </div>
+              {certMode && (
+                <div>
+                  <FieldLabel htmlFor="hotel_id_override">Hotel ID override (certification test only)</FieldLabel>
+                  <input
+                    id="hotel_id_override"
+                    type="text"
+                    placeholder="test_hotel_do_not_book"
+                    className={inputClass}
+                    value={form.hotel_id_override}
+                    onChange={(e) => update("hotel_id_override", e.target.value)}
+                  />
+                </div>
+              )}
             </div>
 
+            {certMode && (
+              <div className="mt-4 rounded-xl border border-status-pending/30 bg-status-pending/10 px-4 py-3 text-sm font-medium text-status-pending">
+                Certification mode – test property only
+              </div>
+            )}
 
             <button
               type="submit"
@@ -479,10 +595,10 @@ function NovaPonudaPage() {
               {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Šaljem...
+                  Sending...
                 </>
               ) : (
-                "Pošalji zahtjev"
+                "Send request"
               )}
             </button>
           </form>
