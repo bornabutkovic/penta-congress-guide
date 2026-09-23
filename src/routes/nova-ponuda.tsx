@@ -562,16 +562,14 @@ function NovaPonudaPage() {
                     className="overflow-hidden"
                   >
                     <div>
-                      <FieldLabel htmlFor="origin_city">Departure city</FieldLabel>
-                      <input
+                      <CityAutocompleteInput
                         id="origin_city"
-                        type="text"
-                        placeholder="e.g. Zagreb"
-                        className={inputClass}
+                        label="Departure city"
                         value={form.origin_city}
-                        onChange={(e) => update("origin_city", e.target.value)}
+                        onChange={(v) => update("origin_city", v)}
+                        placeholder="e.g. Zagreb"
+                        error={errors.origin_city}
                       />
-                      <ErrorText msg={errors.origin_city} />
                     </div>
                   </motion.div>
                 )}
