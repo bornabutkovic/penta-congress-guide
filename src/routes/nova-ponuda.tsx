@@ -567,7 +567,7 @@ function NovaPonudaPage() {
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
-                    className="overflow-hidden"
+                    className={originCityDropdownOpen ? "overflow-visible" : "overflow-hidden"}
                   >
                     <div>
                       <CityAutocompleteInput
@@ -577,6 +577,7 @@ function NovaPonudaPage() {
                         onChange={(v) => update("origin_city", v)}
                         placeholder="e.g. Zagreb"
                         error={errors.origin_city}
+                        onOpenChange={setOriginCityDropdownOpen}
                       />
                     </div>
                   </motion.div>
