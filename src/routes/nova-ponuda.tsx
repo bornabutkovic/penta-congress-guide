@@ -160,6 +160,12 @@ function CityAutocompleteInput({
     };
   }, []);
 
+  useEffect(() => {
+    setSuggestions([]);
+    setIsOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
   const handleChange = (text: string) => {
     setQuery(text);
     onChange(text);
