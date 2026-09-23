@@ -253,6 +253,7 @@ function NovaPonudaPage() {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [originCityDropdownOpen, setOriginCityDropdownOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [certMode, setCertMode] = useState(false);
