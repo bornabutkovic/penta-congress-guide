@@ -124,6 +124,7 @@ function CityAutocompleteInput({
   onChange,
   placeholder,
   error,
+  onOpenChange,
 }: {
   id: string;
   label: string;
@@ -131,14 +132,20 @@ function CityAutocompleteInput({
   onChange: (value: string) => void;
   placeholder?: string;
   error?: string;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<LocationResult[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpenState] = useState(false);
   const [loading, setLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
+
+  const setIsOpen = (open: boolean) => {
+    setIsOpenState(open);
+    onOpenChange?.(open);
+  };
 
   useEffect(() => {
     setQuery((prev) => (prev === value ? prev : value));
