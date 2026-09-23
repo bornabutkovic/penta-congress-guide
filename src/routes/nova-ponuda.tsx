@@ -565,6 +565,7 @@ function NovaPonudaPage() {
                     onChange={(v) => update("destination_city", v)}
                     placeholder="e.g. Vienna"
                     error={errors.destination_city}
+                    mode={form.flight_needed ? "flight" : "city"}
                   />
                 </div>
               )}
