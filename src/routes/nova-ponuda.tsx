@@ -183,7 +183,8 @@ function CityAutocompleteInput({
       const requestId = ++requestIdRef.current;
       setLoading(true);
       try {
-        const res = await fetch(`${AUTOCOMPLETE_URL}?q=${encodeURIComponent(trimmed)}`, {
+        const url = `${AUTOCOMPLETE_URL}?q=${encodeURIComponent(trimmed)}${mode === "city" ? "&mode=city" : ""}`;
+        const res = await fetch(url, {
           headers: { "x-penta-key": "pnt_fi_a3f81c92d6b44e07_zg26" },
         });
         const data = (await res.json()) as { results?: LocationResult[] };
