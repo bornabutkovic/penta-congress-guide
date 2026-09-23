@@ -541,16 +541,14 @@ function NovaPonudaPage() {
                 </div>
               ) : (
                 <div>
-                  <FieldLabel htmlFor="destination_city">City</FieldLabel>
-                  <input
+                  <CityAutocompleteInput
                     id="destination_city"
-                    type="text"
-                    placeholder="e.g. Vienna"
-                    className={inputClass}
+                    label="City"
                     value={form.destination_city}
-                    onChange={(e) => update("destination_city", e.target.value)}
+                    onChange={(v) => update("destination_city", v)}
+                    placeholder="e.g. Vienna"
+                    error={errors.destination_city}
                   />
-                  <ErrorText msg={errors.destination_city} />
                 </div>
               )}
               <AnimatePresence initial={false}>
