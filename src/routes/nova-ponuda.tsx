@@ -125,6 +125,7 @@ function CityAutocompleteInput({
   placeholder,
   error,
   onOpenChange,
+  mode,
 }: {
   id: string;
   label: string;
@@ -133,6 +134,7 @@ function CityAutocompleteInput({
   placeholder?: string;
   error?: string;
   onOpenChange?: (open: boolean) => void;
+  mode: "flight" | "city";
 }) {
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<LocationResult[]>([]);
@@ -158,6 +160,12 @@ function CityAutocompleteInput({
     };
   }, []);
 
+  useEffect(() => {
+    setSuggestions([]);
+    setIsOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
   const handleChange = (text: string) => {
     setQuery(text);
     onChange(text);
@@ -175,7 +183,8 @@ function CityAutocompleteInput({
       const requestId = ++requestIdRef.current;
       setLoading(true);
       try {
-        const res = await fetch(`${AUTOCOMPLETE_URL}?q=${encodeURIComponent(trimmed)}`, {
+        const url = `${AUTOCOMPLETE_URL}?q=${encodeURIComponent(trimmed)}${mode === "city" ? "&mode=city" : ""}`;
+        const res = await fetch(url, {
           headers: { "x-penta-key": "pnt_fi_a3f81c92d6b44e07_zg26" },
         });
         const data = (await res.json()) as { results?: LocationResult[] };
@@ -556,6 +565,7 @@ function NovaPonudaPage() {
                     onChange={(v) => update("destination_city", v)}
                     placeholder="e.g. Vienna"
                     error={errors.destination_city}
+                    mode={form.flight_needed ? "flight" : "city"}
                   />
                 </div>
               )}
@@ -578,6 +588,7 @@ function NovaPonudaPage() {
                         placeholder="e.g. Zagreb"
                         error={errors.origin_city}
                         onOpenChange={setOriginCityDropdownOpen}
+                        mode="flight"
                       />
                     </div>
                   </motion.div>
