@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MobileFrame } from "@/components/MobileFrame";
@@ -104,10 +104,156 @@ function ErrorText({ msg }: { msg?: string }) {
   return <p className="mt-1 text-xs text-destructive">{msg}</p>;
 }
 
+const AUTOCOMPLETE_URL = "https://penta.app.n8n.cloud/webhook/location-autocomplete";
+
+interface LocationResult {
+  iata?: string;
+  subType?: string;
+  city?: string;
+  name?: string;
+  countryCode?: string;
+  isPrimary?: boolean;
+  submitText: string;
+  label: string;
+}
+
+function CityAutocompleteInput({
+  id,
+  label,
+  value,
+  onChange,
+  placeholder,
+  error,
+  onOpenChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  error?: string;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const [query, setQuery] = useState(value);
+  const [suggestions, setSuggestions] = useState<LocationResult[]>([]);
+  const [isOpen, setIsOpenState] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestIdRef = useRef(0);
+
+  const setIsOpen = (open: boolean) => {
+    setIsOpenState(open);
+    onOpenChange?.(open);
+  };
+
+  useEffect(() => {
+    setQuery((prev) => (prev === value ? prev : value));
+  }, [value]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
+    };
+  }, []);
+
+  const handleChange = (text: string) => {
+    setQuery(text);
+    onChange(text);
+
+    if (timerRef.current) clearTimeout(timerRef.current);
+    const trimmed = text.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      setIsOpen(false);
+      setLoading(false);
+      return;
+    }
+
+    timerRef.current = setTimeout(async () => {
+      const requestId = ++requestIdRef.current;
+      setLoading(true);
+      try {
+        const res = await fetch(`${AUTOCOMPLETE_URL}?q=${encodeURIComponent(trimmed)}`, {
+          headers: { "x-penta-key": "pnt_fi_a3f81c92d6b44e07_zg26" },
+        });
+        const data = (await res.json()) as { results?: LocationResult[] };
+        if (requestId !== requestIdRef.current) return;
+        const results = Array.isArray(data?.results) ? data.results : [];
+        setSuggestions(results);
+        setIsOpen(results.length > 0);
+      } catch {
+        if (requestId === requestIdRef.current) {
+          setSuggestions([]);
+          setIsOpen(false);
+        }
+      } finally {
+        if (requestId === requestIdRef.current) setLoading(false);
+      }
+    }, 300);
+  };
+
+  const select = (result: LocationResult) => {
+    onChange(result.submitText);
+    setQuery(result.submitText);
+    setIsOpen(false);
+    setSuggestions([]);
+  };
+
+  return (
+    <div>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <div className="relative">
+        <input
+          id={id}
+          type="text"
+          autoComplete="off"
+          placeholder={placeholder}
+          className={inputClass}
+          value={query}
+          onChange={(e) => handleChange(e.target.value)}
+          onFocus={() => {
+            if (suggestions.length > 0) setIsOpen(true);
+          }}
+          onBlur={() => {
+            if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
+            blurTimerRef.current = setTimeout(() => setIsOpen(false), 150);
+          }}
+        />
+        {loading && (
+          <Loader2 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+        )}
+        {isOpen && suggestions.length > 0 && (
+          <ul className="absolute left-0 right-0 top-[calc(100%+4px)] z-30 max-h-56 overflow-y-auto rounded-xl border border-border bg-card shadow-card">
+            {suggestions.map((result, i) => (
+              <li key={`${result.submitText}-${result.iata ?? i}`}>
+                <button
+                  type="button"
+                  className="block w-full px-3 py-2.5 text-left text-sm hover:bg-accent"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    select(result);
+                  }}
+                >
+                  {result.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <ErrorText msg={error} />
+    </div>
+  );
+}
+
+
 function NovaPonudaPage() {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [originCityDropdownOpen, setOriginCityDropdownOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [certMode, setCertMode] = useState(false);
@@ -403,16 +549,14 @@ function NovaPonudaPage() {
                 </div>
               ) : (
                 <div>
-                  <FieldLabel htmlFor="destination_city">City</FieldLabel>
-                  <input
+                  <CityAutocompleteInput
                     id="destination_city"
-                    type="text"
-                    placeholder="e.g. Vienna"
-                    className={inputClass}
+                    label="City"
                     value={form.destination_city}
-                    onChange={(e) => update("destination_city", e.target.value)}
+                    onChange={(v) => update("destination_city", v)}
+                    placeholder="e.g. Vienna"
+                    error={errors.destination_city}
                   />
-                  <ErrorText msg={errors.destination_city} />
                 </div>
               )}
               <AnimatePresence initial={false}>
@@ -423,19 +567,18 @@ function NovaPonudaPage() {
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
-                    className="overflow-hidden"
+                    className={originCityDropdownOpen ? "overflow-visible" : "overflow-hidden"}
                   >
                     <div>
-                      <FieldLabel htmlFor="origin_city">Departure city</FieldLabel>
-                      <input
+                      <CityAutocompleteInput
                         id="origin_city"
-                        type="text"
-                        placeholder="e.g. Zagreb"
-                        className={inputClass}
+                        label="Departure city"
                         value={form.origin_city}
-                        onChange={(e) => update("origin_city", e.target.value)}
+                        onChange={(v) => update("origin_city", v)}
+                        placeholder="e.g. Zagreb"
+                        error={errors.origin_city}
+                        onOpenChange={setOriginCityDropdownOpen}
                       />
-                      <ErrorText msg={errors.origin_city} />
                     </div>
                   </motion.div>
                 )}
