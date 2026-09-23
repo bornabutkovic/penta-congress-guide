@@ -125,6 +125,7 @@ function CityAutocompleteInput({
   placeholder,
   error,
   onOpenChange,
+  mode,
 }: {
   id: string;
   label: string;
@@ -133,6 +134,7 @@ function CityAutocompleteInput({
   placeholder?: string;
   error?: string;
   onOpenChange?: (open: boolean) => void;
+  mode: "flight" | "city";
 }) {
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<LocationResult[]>([]);
