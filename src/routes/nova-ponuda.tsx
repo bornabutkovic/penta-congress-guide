@@ -588,6 +588,7 @@ function NovaPonudaPage() {
                         placeholder="e.g. Zagreb"
                         error={errors.origin_city}
                         onOpenChange={setOriginCityDropdownOpen}
+                        mode="flight"
                       />
                     </div>
                   </motion.div>
