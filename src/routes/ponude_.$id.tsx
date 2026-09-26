@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Plane, BedDouble, Car, Ticket, MapPin, Calendar, Check, Loader2, Send, Star } from "lucide-react";
+import { Plane, BedDouble, Car, Ticket, MapPin, Calendar, Check, Loader2, Send, Star, Clock3, Luggage, BriefcaseBusiness } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { MobileFrame } from "@/components/MobileFrame";
@@ -58,7 +58,33 @@ interface NormalizedOption {
   subtitle?: string;
   price?: number;
   recommended?: boolean;
+  flightDetails?: FlightOptionDetails;
   raw: Record<string, unknown>;
+}
+
+interface FlightSegmentDetail {
+  flightNumber?: string;
+  checkedBags?: number;
+  cabinBags?: number;
+}
+
+interface FlightLegDetail {
+  label: string;
+  origin: string;
+  destination: string;
+  departureAt?: string;
+  arrivalAt?: string;
+  durationMinutes?: number;
+  stops: number;
+  layoverSummary?: string;
+  segments: FlightSegmentDetail[];
+}
+
+interface FlightOptionDetails {
+  legs: FlightLegDetail[];
+  totalDurationMinutes?: number;
+  checkedBags?: number;
+  cabinBags?: number;
 }
 
 interface CategoryView {
@@ -83,6 +109,46 @@ function num(v: unknown): number | undefined {
   return Number.isNaN(n) ? undefined : n;
 }
 
+function record(v: unknown): Record<string, unknown> | undefined {
+  return v && typeof v === "object" && !Array.isArray(v) ? v as Record<string, unknown> : undefined;
+}
+
+function text(v: unknown): string | undefined {
+  return typeof v === "string" && v.trim() ? v : undefined;
+}
+
+function buildFlightLeg(
+  label: string,
+  rawLeg: Record<string, unknown>,
+  fareDetails: Record<string, unknown>[],
+  fareOffset: number,
+  fallbackCheckedBags?: number,
+  fallbackCabinBags?: number,
+): FlightLegDetail {
+  const rawSegments = Array.isArray(rawLeg.segments) ? rawLeg.segments : [];
+  const segments = rawSegments.map((rawSegment, index) => {
+    const segment = record(rawSegment) ?? {};
+    const fare = fareDetails[fareOffset + index] ?? {};
+    return {
+      flightNumber: text(segment.flight_number),
+      checkedBags: num(record(fare.includedCheckedBags)?.quantity) ?? fallbackCheckedBags,
+      cabinBags: num(record(fare.includedCabinBags)?.quantity) ?? fallbackCabinBags,
+    };
+  });
+
+  return {
+    label,
+    origin: text(rawLeg.origin) ?? text(record(rawSegments[0])?.from) ?? "",
+    destination: text(rawLeg.destination) ?? text(record(rawSegments.at(-1))?.to) ?? "",
+    departureAt: text(rawLeg.departure_at),
+    arrivalAt: text(rawLeg.arrival_at),
+    durationMinutes: num(rawLeg.duration_minutes),
+    stops: num(rawLeg.stops) ?? Math.max(segments.length - 1, 0),
+    layoverSummary: text(rawLeg.layover_summary),
+    segments,
+  };
+}
+
 function buildCategoryView(kind: CategoryKind, data: Record<string, unknown>): CategoryView {
   const meta = categoryMeta[kind];
   const exists = !!data && Object.keys(data).length > 0;
@@ -94,14 +160,30 @@ function buildCategoryView(kind: CategoryKind, data: Record<string, unknown>): C
     const items: NormalizedOption[] = opts.map((o, i) => {
       const outbound = o.outbound as Record<string, unknown> | undefined;
       const inbound = o.inbound as Record<string, unknown> | undefined;
-      const stops = num(outbound?.stops) ?? 0;
-      const layover = (outbound?.layover_summary as string) || (stops > 0 ? `${stops} presjedanja` : "Direktan let");
-      const bags = num(o.bags_included) ?? 0;
+      const rawOffer = record(o.raw_offer);
+      const travelerPricings = Array.isArray(rawOffer?.travelerPricings) ? rawOffer.travelerPricings : [];
+      const firstTraveler = record(travelerPricings[0]);
+      const fareDetails = Array.isArray(firstTraveler?.fareDetailsBySegment)
+        ? firstTraveler.fareDetailsBySegment.map((fare) => record(fare) ?? {})
+        : [];
+      const checkedBags = num(o.bags_included);
+      const cabinBags = num(o.cabin_bags_included);
+      const outboundSegmentCount = Array.isArray(outbound?.segments) ? outbound.segments.length : 0;
+      const legs = [
+        outbound ? buildFlightLeg("Odlazak", outbound, fareDetails, 0, checkedBags, cabinBags) : null,
+        inbound ? buildFlightLeg("Povratak", inbound, fareDetails, outboundSegmentCount, checkedBags, cabinBags) : null,
+      ].filter((leg): leg is FlightLegDetail => leg !== null);
+      const flightNumbers = legs.flatMap((leg) => leg.segments.map((segment) => segment.flightNumber).filter(Boolean));
       return {
         key: String(o.offer_id ?? i),
-        title: `${o.airline ?? "Let"} · ${outbound?.origin ?? ""} → ${outbound?.destination ?? ""}`,
-        subtitle: [layover, inbound ? "povratni uključen" : "samo u jednom smjeru", bags > 0 ? `${bags}× predana prtljaga` : "bez predane prtljage"].join(" · "),
+        title: [o.airline ?? "Let", flightNumbers.join(", ")].filter(Boolean).join(" · "),
         price: num(o.price_total),
+        flightDetails: {
+          legs,
+          totalDurationMinutes: num(o.total_duration_minutes),
+          checkedBags,
+          cabinBags,
+        },
         raw: o,
       };
     });
