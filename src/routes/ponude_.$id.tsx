@@ -184,6 +184,7 @@ const bookingStatusLabels: Record<string, string> = {
   requested: "Zahtjev poslan — čeka ručnu rezervaciju",
   manually_booked: "Rezervirano",
   cancelled: "Zahtjev otkazan",
+  booked: "Rezervirano",
 };
 
 const RESERVATION_GATEWAY_URL = "https://penta.app.n8n.cloud/webhook/penta-reservation";
@@ -750,8 +751,8 @@ function ReservationSummary({
                     {pcItems.map(({ kind, sub }) => {
                       const Icon = categoryMeta[kind].icon;
                       const st = String(sub.status ?? "");
-                      const orig = pickPrice(sub, ["original_price", "old_price", "expected_price", "quoted_price"]);
-                      const next = pickPrice(sub, ["new_price", "current_price", "price"]);
+                      const orig = pickPrice(sub, ["original_price", "new_price_per_room" === "" ? "" : "original_price_per_room", "old_price", "expected_price", "quoted_price"]);
+                      const next = pickPrice(sub, ["new_price", "new_price_per_room", "current_price", "price"]);
                       const label = st === "price_same" ? "isto" : st === "price_changed" ? "promijenjeno" : "greška";
                       const tone =
                         st === "price_same"
