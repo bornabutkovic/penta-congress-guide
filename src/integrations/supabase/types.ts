@@ -47,6 +47,27 @@ export type Database = {
         }
         Relationships: []
       }
+      api_token_cache: {
+        Row: {
+          access_token: string
+          expires_at: string
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          expires_at: string
+          provider: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          expires_at?: string
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       approved_quotes_reference: {
         Row: {
           approved_at: string | null
@@ -122,9 +143,16 @@ export type Database = {
           offer_id: string | null
           order_response: Json | null
           passengers: Json | null
+          pnr: string | null
           price_response: Json | null
           search_id: string | null
           status: string
+          ticket_numbers: Json | null
+          ticket_requested_at: string | null
+          ticket_requested_by: string | null
+          ticketed_at: string | null
+          ticketed_by: string | null
+          ticketing_status: string
           updated_at: string
         }
         Insert: {
@@ -136,9 +164,16 @@ export type Database = {
           offer_id?: string | null
           order_response?: Json | null
           passengers?: Json | null
+          pnr?: string | null
           price_response?: Json | null
           search_id?: string | null
           status?: string
+          ticket_numbers?: Json | null
+          ticket_requested_at?: string | null
+          ticket_requested_by?: string | null
+          ticketed_at?: string | null
+          ticketed_by?: string | null
+          ticketing_status?: string
           updated_at?: string
         }
         Update: {
@@ -150,9 +185,16 @@ export type Database = {
           offer_id?: string | null
           order_response?: Json | null
           passengers?: Json | null
+          pnr?: string | null
           price_response?: Json | null
           search_id?: string | null
           status?: string
+          ticket_numbers?: Json | null
+          ticket_requested_at?: string | null
+          ticket_requested_by?: string | null
+          ticketed_at?: string | null
+          ticketed_by?: string | null
+          ticketing_status?: string
           updated_at?: string
         }
         Relationships: []
@@ -773,6 +815,7 @@ export type Database = {
         Row: {
           approval_token: string
           approved_at: string | null
+          assigned_agent_id: string | null
           client_email: string | null
           client_id: string | null
           client_name: string | null
@@ -797,6 +840,7 @@ export type Database = {
         Insert: {
           approval_token?: string
           approved_at?: string | null
+          assigned_agent_id?: string | null
           client_email?: string | null
           client_id?: string | null
           client_name?: string | null
@@ -821,6 +865,7 @@ export type Database = {
         Update: {
           approval_token?: string
           approved_at?: string | null
+          assigned_agent_id?: string | null
           client_email?: string | null
           client_id?: string | null
           client_name?: string | null
@@ -844,6 +889,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "quotes_assigned_agent_id_fkey"
+            columns: ["assigned_agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "quotes_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -858,6 +910,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rate_limits: {
+        Row: {
+          count: number
+          key: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          window_start: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          window_start?: string
+        }
+        Relationships: []
       }
       traveler_profiles: {
         Row: {
@@ -924,47 +994,13 @@ export type Database = {
           },
         ]
       }
-      user_profiles: {
-        Row: {
-          auth_user_id: string | null
-          company: string | null
-          created_at: string | null
-          email: string | null
-          full_name: string | null
-          id: string
-          phone: string | null
-          role: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          auth_user_id?: string | null
-          company?: string | null
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          phone?: string | null
-          role?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          auth_user_id?: string | null
-          company?: string | null
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          phone?: string | null
-          role?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      current_role_in: { Args: { target_roles: string[] }; Returns: boolean }
+      current_role_is: { Args: { target_role: string }; Returns: boolean }
       get_applicable_fee_schedule: {
         Args: { p_company_id?: string }
         Returns: Json
