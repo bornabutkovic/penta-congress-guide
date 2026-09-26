@@ -186,6 +186,8 @@ const bookingStatusLabels: Record<string, string> = {
   cancelled: "Zahtjev otkazan",
 };
 
+const RESERVATION_GATEWAY_URL = "https://penta.app.n8n.cloud/webhook/penta-reservation";
+
 interface BookingRequestRow {
   id: string;
   status: string;
@@ -198,6 +200,11 @@ interface BookingRequestRow {
   selected_hotel: Record<string, unknown> | null;
   selected_transfer: Record<string, unknown> | null;
   selected_fee: Record<string, unknown> | null;
+  price_check: string | null;
+  failure_reason: string | null;
+  failed_at: string | null;
+  booked_at: string | null;
+  vendor_booking_reference: string | null;
 }
 
 function optionSummary(raw: Record<string, unknown> | null | undefined, kind: CategoryKind): string {
@@ -218,6 +225,8 @@ function QuoteDetailPage() {
   const [bookingRequest, setBookingRequest] = useState<BookingRequestRow | null>(null);
   const [bookingLoading, setBookingLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [priceCheckStatus, setPriceCheckStatus] = useState<"idle" | "checking" | "error">("idle");
+  const [confirming, setConfirming] = useState(false);
   const [selected, setSelected] = useState<Record<CategoryKind, string | null>>({
     flight: null, hotel: null, transfer: null, fee: null,
   });
@@ -236,7 +245,7 @@ function QuoteDetailPage() {
   const fetchBookingRequest = useCallback(async () => {
     const { data, error } = await supabase
       .from("booking_requests")
-      .select("id,status,created_at,include_flight,include_hotel,include_transfer,include_fee,selected_flight,selected_hotel,selected_transfer,selected_fee")
+      .select("id,status,created_at,include_flight,include_hotel,include_transfer,include_fee,selected_flight,selected_hotel,selected_transfer,selected_fee,price_check,failure_reason,failed_at,booked_at,vendor_booking_reference")
       .eq("quote_id", id)
       .order("created_at", { ascending: false })
       .limit(1);
@@ -349,7 +358,7 @@ function QuoteDetailPage() {
       const selTransfer = pickRaw("transfer");
       const selFee = pickRaw("fee");
 
-      const { error } = await supabase.from("booking_requests").insert({
+      const { data: inserted, error } = await supabase.from("booking_requests").insert({
         quote_id: id,
         include_flight: !!selFlight,
         include_hotel: !!selHotel,
@@ -360,14 +369,53 @@ function QuoteDetailPage() {
         selected_transfer: selTransfer as unknown as Json,
         selected_fee: selFee as unknown as Json,
         requested_by_email: user?.email ?? null,
-      });
+      }).select().single();
       if (error) throw new Error(error.message);
       toast.success("Zahtjev za rezervaciju poslan");
       await fetchBookingRequest();
+      setSubmitting(false);
+      if (inserted?.id) void runPriceCheck(inserted.id);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Greška pri slanju zahtjeva");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function callGateway(bookingRequestId: string, action: "price_check" | "confirm") {
+    const res = await fetch(RESERVATION_GATEWAY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-penta-key": "pnt_res_9f2b6ac1d84e4310_zg26" },
+      body: JSON.stringify({ booking_request_id: bookingRequestId, action }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json().catch(() => null);
+    return (Array.isArray(json) ? json[0] : json) as Partial<BookingRequestRow> | null;
+  }
+
+  async function runPriceCheck(bookingRequestId: string) {
+    setPriceCheckStatus("checking");
+    try {
+      await callGateway(bookingRequestId, "price_check");
+      await fetchBookingRequest();
+      setPriceCheckStatus("idle");
+    } catch {
+      toast.error("Provjera cijene nije uspjela");
+      setPriceCheckStatus("error");
+    }
+  }
+
+  async function handleConfirm() {
+    if (!bookingRequest) return;
+    setConfirming(true);
+    try {
+      const row = await callGateway(bookingRequest.id, "confirm");
+      if (row && row.id) setBookingRequest((prev) => (prev ? { ...prev, ...row } : prev));
+      await fetchBookingRequest();
+    } catch {
+      toast.error("Rezervacija nije uspjela");
+    } finally {
+      setConfirming(false);
     }
   }
 
@@ -464,6 +512,10 @@ function QuoteDetailPage() {
             anySelected={anySelected}
             submitting={submitting}
             onSubmit={handleSubmit}
+            priceCheckStatus={priceCheckStatus}
+            onRefreshPrice={() => bookingRequest && runPriceCheck(bookingRequest.id)}
+            confirming={confirming}
+            onConfirm={handleConfirm}
           />
         </div>
       </div>
@@ -574,6 +626,26 @@ function CategorySection({
   );
 }
 
+function parsePriceCheck(raw: unknown): Record<string, unknown> | null {
+  if (raw == null) return null;
+  let v: unknown = raw;
+  try {
+    if (typeof v === "string") v = JSON.parse(v);
+    if (typeof v === "string") v = JSON.parse(v);
+  } catch {
+    return null;
+  }
+  return v && typeof v === "object" ? (v as Record<string, unknown>) : null;
+}
+
+function pickPrice(o: Record<string, unknown>, keys: string[]): number | undefined {
+  for (const k of keys) {
+    const n = num(o[k]);
+    if (n !== undefined) return n;
+  }
+  return undefined;
+}
+
 function ReservationSummary({
   bookingLoading,
   bookingRequest,
@@ -581,6 +653,10 @@ function ReservationSummary({
   anySelected,
   submitting,
   onSubmit,
+  priceCheckStatus,
+  onRefreshPrice,
+  confirming,
+  onConfirm,
 }: {
   bookingLoading: boolean;
   bookingRequest: BookingRequestRow | null;
@@ -588,6 +664,10 @@ function ReservationSummary({
   anySelected: boolean;
   submitting: boolean;
   onSubmit: () => void;
+  priceCheckStatus: "idle" | "checking" | "error";
+  onRefreshPrice: () => void;
+  confirming: boolean;
+  onConfirm: () => void;
 }) {
   if (bookingLoading) {
     return <Skeleton className="h-28 w-full rounded-2xl" />;
@@ -601,29 +681,138 @@ function ReservationSummary({
       { kind: "fee", raw: bookingRequest.selected_fee },
     ] as { kind: CategoryKind; raw: Record<string, unknown> | null }[]).filter((r) => r.raw);
 
+    const pc = parsePriceCheck(bookingRequest.price_check);
+    const pcItems = (["flight", "hotel"] as CategoryKind[])
+      .map((kind) => {
+        const sub = pc?.[kind];
+        return sub && typeof sub === "object" ? { kind, sub: sub as Record<string, unknown> } : null;
+      })
+      .filter((x): x is { kind: CategoryKind; sub: Record<string, unknown> } => !!x);
+    const isBooked = bookingRequest.status === "booked" && !!bookingRequest.vendor_booking_reference;
+    const failureLines = (bookingRequest.failure_reason ?? "").split("\n").filter((l) => l.trim());
+
     return (
-      <div className="rounded-2xl bg-card p-5 shadow-card">
-        <h3 className="font-display text-sm font-semibold">Zahtjev za rezervaciju</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Zahtjev za rezervaciju poslan — Penta agent će ručno dovršiti rezervaciju odabranih opcija.
-        </p>
-        <div className="mt-4 space-y-2">
-          {rows.map(({ kind, raw }) => {
-            const Icon = categoryMeta[kind].icon;
-            return (
-              <div key={kind} className="flex items-center gap-2 text-sm">
-                <Icon className="h-4 w-4 text-primary shrink-0" strokeWidth={2.2} />
-                <span>
-                  <span className="font-semibold">{categoryMeta[kind].label}:</span> {optionSummary(raw, kind)}
-                </span>
+      <div className="space-y-4">
+        <div className="rounded-2xl bg-card p-5 shadow-card">
+          <h3 className="font-display text-sm font-semibold">Zahtjev za rezervaciju</h3>
+          <div className="mt-4 space-y-2">
+            {rows.map(({ kind, raw }) => {
+              const Icon = categoryMeta[kind].icon;
+              return (
+                <div key={kind} className="flex items-center gap-2 text-sm">
+                  <Icon className="h-4 w-4 text-primary shrink-0" strokeWidth={2.2} />
+                  <span>
+                    <span className="font-semibold">{categoryMeta[kind].label}:</span> {optionSummary(raw, kind)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground space-y-1">
+            <p><span className="font-semibold">Status:</span> {bookingStatusLabels[bookingRequest.status] ?? bookingRequest.status}</p>
+            <p><span className="font-semibold">Poslano:</span> {new Date(bookingRequest.created_at).toLocaleDateString("hr-HR")}</p>
+          </div>
+        </div>
+
+        {isBooked ? (
+          <div className="rounded-2xl bg-card p-5 shadow-card border border-[color:var(--status-approved)]/40">
+            <div className="flex items-center gap-2 text-[color:var(--status-approved)]">
+              <Check className="h-5 w-5" />
+              <h3 className="font-display text-sm font-semibold">Rezervacija potvrđena</h3>
+            </div>
+            <p className="mt-2 text-sm"><span className="font-semibold">Referenca:</span> {bookingRequest.vendor_booking_reference}</p>
+            {bookingRequest.booked_at && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {new Date(bookingRequest.booked_at).toLocaleString("hr-HR")}
+              </p>
+            )}
+          </div>
+        ) : (
+          <>
+            {priceCheckStatus === "checking" ? (
+              <div className="rounded-2xl bg-card p-5 shadow-card flex items-center gap-3 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                Provjeravam trenutnu cijenu…
               </div>
-            );
-          })}
-        </div>
-        <div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground space-y-1">
-          <p><span className="font-semibold">Status:</span> {bookingStatusLabels[bookingRequest.status] ?? bookingRequest.status}</p>
-          <p><span className="font-semibold">Poslano:</span> {new Date(bookingRequest.created_at).toLocaleDateString("hr-HR")}</p>
-        </div>
+            ) : (
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display text-sm font-semibold">Provjera cijene</h3>
+                  <button
+                    onClick={onRefreshPrice}
+                    className="text-xs font-semibold text-primary active:opacity-70"
+                  >
+                    Osvježi cijenu
+                  </button>
+                </div>
+                {pc ? (
+                  <div className="mt-3 space-y-2">
+                    {pcItems.map(({ kind, sub }) => {
+                      const Icon = categoryMeta[kind].icon;
+                      const st = String(sub.status ?? "");
+                      const orig = pickPrice(sub, ["original_price", "old_price", "expected_price", "quoted_price"]);
+                      const next = pickPrice(sub, ["new_price", "current_price", "price"]);
+                      const label = st === "price_same" ? "isto" : st === "price_changed" ? "promijenjeno" : "greška";
+                      const tone =
+                        st === "price_same"
+                          ? "bg-[color:var(--status-approved)]/10 text-[color:var(--status-approved)]"
+                          : st === "price_changed"
+                            ? "bg-[color:var(--status-pending)]/15 text-[color:var(--status-pending)]"
+                            : "bg-[color:var(--status-rejected)]/10 text-[color:var(--status-rejected)]";
+                      return (
+                        <div key={kind} className="flex items-center gap-2 text-sm">
+                          <Icon className="h-4 w-4 text-primary shrink-0" strokeWidth={2.2} />
+                          <span className="font-semibold">{categoryMeta[kind].label}</span>
+                          <span className="ml-auto text-xs text-muted-foreground">
+                            {orig !== undefined ? formatEur(orig) : "—"} → {next !== undefined ? formatEur(next) : "—"}
+                          </span>
+                          <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", tone)}>{label}</span>
+                        </div>
+                      );
+                    })}
+                    {pcItems.length === 0 && (
+                      <p className="text-xs text-muted-foreground">Nema stavki za provjeru cijene.</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {priceCheckStatus === "error" ? "Provjera cijene nije uspjela." : "Cijena još nije provjerena."}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {failureLines.length > 0 && (
+              <div className="rounded-2xl bg-card p-5 shadow-card border border-[color:var(--status-pending)]/50">
+                <h3 className="font-display text-sm font-semibold text-[color:var(--status-pending)]">Rezervacija nije izvršena</h3>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {failureLines.map((l, i) => (
+                    <li key={i}>{l}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div>
+              <button
+                onClick={onConfirm}
+                disabled={confirming || priceCheckStatus === "checking"}
+                className={cn(
+                  "w-full h-12 rounded-xl bg-gradient-brand text-primary-foreground text-sm font-semibold shadow-elevated flex items-center justify-center gap-2 active:scale-[0.99] transition",
+                  (confirming || priceCheckStatus === "checking") && "opacity-60 cursor-not-allowed",
+                )}
+              >
+                {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Rezerviraj
+              </button>
+              {pc && pc.ready_to_confirm === false && (
+                <p className="mt-2 text-xs text-[color:var(--status-pending)]">
+                  Cijena se promijenila ili nije potvrđena — provjerite prije rezervacije.
+                </p>
+              )}
+            </div>
+          </>
+        )}
       </div>
     );
   }
