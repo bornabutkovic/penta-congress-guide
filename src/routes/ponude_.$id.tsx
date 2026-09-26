@@ -664,6 +664,7 @@ function CategorySection({
                     )}
                   </p>
                   {item.subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{item.subtitle}</p>}
+                  {item.flightDetails && <FlightDetails details={item.flightDetails} />}
                 </div>
                 {item.price !== undefined && <p className="font-display shrink-0 font-bold">{formatEur(item.price)}</p>}
               </label>
@@ -680,6 +681,7 @@ function CategorySection({
                       )}
                     </p>
                     {item.subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{item.subtitle}</p>}
+                    {item.flightDetails && <FlightDetails details={item.flightDetails} />}
                   </div>
                   {item.price !== undefined && <p className="font-display shrink-0 font-bold">{formatEur(item.price)}</p>}
                 </div>
@@ -705,6 +707,82 @@ function CategorySection({
           )}
         </div>
       </motion.div>
+    </div>
+  );
+}
+
+function formatFlightDateTime(value?: string): string {
+  if (!value) return "Vrijeme nije dostupno";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("hr-HR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatDuration(minutes?: number): string | null {
+  if (minutes === undefined) return null;
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  if (hours === 0) return `${remaining} min`;
+  return remaining > 0 ? `${hours} h ${remaining} min` : `${hours} h`;
+}
+
+function formatStops(stops: number): string {
+  if (stops === 0) return "Direktan let";
+  if (stops === 1) return "1 presjedanje";
+  return `${stops} presjedanja`;
+}
+
+function legBagCount(segments: FlightSegmentDetail[], kind: "checkedBags" | "cabinBags"): string {
+  const values = segments.map((segment) => segment[kind]).filter((value): value is number => value !== undefined);
+  if (values.length === 0) return "—";
+  const unique = [...new Set(values)];
+  return unique.join(" / ");
+}
+
+function FlightDetails({ details }: { details: FlightOptionDetails }) {
+  return (
+    <div className="mt-3 space-y-2.5 border-t border-border pt-3">
+      {details.legs.map((leg) => {
+        const numbers = leg.segments.map((segment) => segment.flightNumber).filter(Boolean).join(", ");
+        const duration = formatDuration(leg.durationMinutes);
+        return (
+          <div key={`${leg.label}-${leg.origin}-${leg.destination}`} className="rounded-lg bg-secondary/50 p-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{leg.label}</p>
+              {numbers && <p className="text-[10px] font-semibold text-foreground">{numbers}</p>}
+            </div>
+            <p className="mt-1 font-display text-sm font-semibold">{leg.origin} → {leg.destination}</p>
+            <div className="mt-1.5 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-[11px]">
+              <div>
+                <p className="text-muted-foreground">Polazak</p>
+                <p className="font-medium">{formatFlightDateTime(leg.departureAt)}</p>
+              </div>
+              <span className="text-muted-foreground">→</span>
+              <div className="text-right">
+                <p className="text-muted-foreground">Dolazak</p>
+                <p className="font-medium">{formatFlightDateTime(leg.arrivalAt)}</p>
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+              {duration && <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />{duration}</span>}
+              <span>{formatStops(leg.stops)}</span>
+              {leg.layoverSummary && <span>{leg.layoverSummary}</span>}
+              <span className="inline-flex items-center gap-1"><Luggage className="h-3 w-3" />Predana: {legBagCount(leg.segments, "checkedBags")}</span>
+              <span className="inline-flex items-center gap-1"><BriefcaseBusiness className="h-3 w-3" />Ručna: {legBagCount(leg.segments, "cabinBags")}</span>
+            </div>
+          </div>
+        );
+      })}
+      {details.totalDurationMinutes !== undefined && (
+        <p className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+          <Clock3 className="h-3 w-3" />Ukupno trajanje putovanja: {formatDuration(details.totalDurationMinutes)}
+        </p>
+      )}
     </div>
   );
 }
